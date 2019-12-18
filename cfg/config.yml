@@ -1,0 +1,4 @@
+verbose: false
+mode: "manual" # manual/json
+dict_path: "cfg/dict.txt"
+json_path: "" # ignored if mode = manual

