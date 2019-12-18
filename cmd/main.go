@@ -44,8 +44,8 @@ func main() {
 		}
 
 	} else if config.Mode() == "json" {
-		log.Fatalln("Whoops, JSON mode is not supported yet!")
+		log.Fatalln("cfg/config.yml: whoops, JSON mode is not supported yet!")
 	} else {
-		log.Fatalf("Whoops, '%s' is not a valid mode, you fool!\n", config.Mode())
+		log.Fatalf("cfg/config.yml: whoops, '%s' is not a valid mode\n", config.Mode())
 	}
 }

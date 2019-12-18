@@ -1,4 +1,4 @@
 verbose: false
 mode: "manual" # manual/json
-dict_path: "cfg/dict.txt"
+dict_path: "cfg/dict.txt" # from main directory
 json_path: "" # ignored if mode = manual
