@@ -2,7 +2,7 @@ package loadcfg
 
 import (
 	"bufio"
-	"errors"
+	"fmt"
 	"os"
 
 	"github.com/spf13/viper"
@@ -72,7 +72,7 @@ func LoadConfig() (*Config, error) {
 	viper.SetConfigName("config")
 	viper.AddConfigPath("../cfg")
 	if err := viper.ReadInConfig(); err != nil {
-		return &Config{}, errors.New("internal/loadcfg: failed to load config: " + err.Error())
+		return &Config{}, fmt.Errorf("internal/loadcfg: failed to load config: %s", err.Error())
 	}
 
 	c := &Config{
@@ -91,6 +91,7 @@ func txtToStringArr(path string) ([]string, error) {
 	if err != nil {
 		return []string{}, err
 	}
+	defer f.Close()
 
 	sArr := []string{}
 	sc := bufio.NewScanner(f)
@@ -108,7 +109,7 @@ func txtToStringArr(path string) ([]string, error) {
 func LoadDict(path string) (*Dict, error) {
 	sArr, err := txtToStringArr(path)
 	if err != nil {
-		return &Dict{}, errors.New("internal/loadcfg: failed to open " + path + ": " + err.Error())
+		return &Dict{}, fmt.Errorf("internal/loadcfg: failed to open %s: %s", path, err.Error())
 	}
 	return &Dict{pwds: sArr}, nil
 }
@@ -117,7 +118,7 @@ func LoadDict(path string) (*Dict, error) {
 func LoadHostlist(path string) (*Hostlist, error) {
 	sArr, err := txtToStringArr(path)
 	if err != nil {
-		return &Hostlist{}, errors.New("internal/loadcfg: failed to open " + path + ": " + err.Error())
+		return &Hostlist{}, fmt.Errorf("internal/loadcfg: failed to open %s: %s", path, err.Error())
 	}
 	return &Hostlist{hosts: sArr}, nil
 }
