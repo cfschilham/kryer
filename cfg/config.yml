@@ -1,4 +1,6 @@
 verbose: false
-mode: "manual" # manual/json
+mode: "manual" # manual/hostlist/json
 dict_path: "cfg/dict.txt" # from main directory
-json_path: "" # ignored if mode = manual
+hostlist_path: "cfg/hostlist.txt"
+json_input_path: "" # path to json file containing hostname + username combinations
+json_output_path: "" # file to write discovered hostname + username + password combinations to
