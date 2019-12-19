@@ -38,7 +38,8 @@ func main() {
 					log.Printf("Failed to connect\n")
 				} else {
 					log.Printf("Connection successfully established!\n")
-					log.Printf("Host: %s\nPass: %s\n", hostname+"@"+hostname+".local", entry)
+					log.Printf("Host: %s | Pass: %s\n", hostname+"@"+hostname+".local", entry)
+					break
 				}
 			}
 		}
