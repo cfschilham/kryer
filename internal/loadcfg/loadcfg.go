@@ -138,7 +138,8 @@ func LoadDict(path string) (*Dict, error) {
 	return &Dict{pwds: slc}, nil
 }
 
-// StrToHost takes a string and returns a host. Strings should be passed in the form 'username@host'.
+// StrToHost takes a string and returns a host. Strings should be passed in the form 'username@host' unless usrIsHost is true.
+// With usrIsHost enabled, for example, an input of 'user1' means an output of a Host struct with username: 'user1', ip: 'user1.local'.
 func StrToHost(str string, usrIsHost bool) (Host, error) {
 	if usrIsHost {
 		return Host{
@@ -158,7 +159,9 @@ func StrToHost(str string, usrIsHost bool) (Host, error) {
 }
 
 // strSlcToHosts takes a slice of strings and returns a slice of hosts. These hosts
-// can be used to append to a Hostlist type. Strings should be passed in the form 'username@host'.
+// can be used to append to a Hostlist type. Strings should be passed in the form 'username@host'
+// unless usrIsHost is true. With usrIsHost enabled, for example, an input of 'user1' means an output of a Host struct
+// with username: 'user1', ip: 'user1.local'.
 func strSlcToHosts(slc []string, usrIsHost bool) ([]Host, error) {
 	var hostSlc []Host
 	for _, str := range slc {
