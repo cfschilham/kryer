@@ -62,7 +62,7 @@ func main() {
 	}
 
 	fmt.Printf("Loading %s...\n", config.DictPath())
-	dict, err := loadcfg.LoadDict("../" + config.DictPath())
+	dict, err := loadcfg.LoadDict(config.DictPath())
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -81,7 +81,7 @@ func main() {
 
 	case "hostlist":
 		fmt.Printf("Loading %s...\n", config.HostlistPath())
-		hostlist, err := loadcfg.LoadHostlist("../" + config.HostlistPath())
+		hostlist, err := loadcfg.LoadHostlist(config.HostlistPath())
 		if err != nil {
 			log.Fatalln(err)
 		}
