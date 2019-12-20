@@ -66,13 +66,13 @@ func main() {
 
 	switch config.Mode() {
 	case "manual":
-		for {
-			if config.UsrIsHost() {
-				fmt.Println("You currently have 'user_is_host' enabled in cfg/config.yml. This means ip adresses are inferred, meaning you only have to enter the username. Read config for details.")
-			} else {
-				fmt.Println("Example input: 'john@johns-pc.local', peter@192.168.1.2")
-			}
+		if config.UsrIsHost() {
+			fmt.Println("You currently have 'user_is_host' enabled in cfg/config.yml. This means ip adresses are inferred, meaning you only have to enter the username. Read config for details.")
+		} else {
+			fmt.Println("Example input: 'john@johns-pc.local', peter@192.168.1.2")
+		}
 
+		for {
 			var input string
 			fmt.Print("Enter host (type 'exit' to exit): ")
 			fmt.Scanln(&input)
