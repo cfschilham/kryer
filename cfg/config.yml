@@ -1,4 +1,6 @@
 verbose: false
+user_is_host: true # when enabled, entries in hostlist will automatically be interpreted as username@username.local
 mode: "manual" # manual/hostlist
-dict_path: "cfg/dict.txt" # from main directory
-hostlist_path: "cfg/hostlist.txt"
+port: "22" # ssh port to connect to, conventionally 22
+dict_path: "cfg/dict.txt"
+hostlist_path: "cfg/hostlist.txt" 
