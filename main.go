@@ -68,7 +68,7 @@ func main() {
 	case "manual":
 		for {
 			if config.UsrIsHost() {
-				fmt.Println("You currently have 'user_is_host' enabled in cfg/config.yml. This means\nip adresses are inferred, meaning you only have to enter the username. Read config for details.")
+				fmt.Println("You currently have 'user_is_host' enabled in cfg/config.yml. This means ip adresses are inferred, meaning you only have to enter the username. Read config for details.")
 			} else {
 				fmt.Println("Example input: 'john@johns-pc.local', peter@192.168.1.2")
 			}
@@ -81,6 +81,7 @@ func main() {
 				os.Exit(0)
 			}
 
+			// Use user input to create a new Host struct
 			h, err := loadcfg.StrToHost(input, config.UsrIsHost())
 			if err != nil {
 				log.Println(err.Error())
@@ -89,13 +90,15 @@ func main() {
 
 			fmt.Printf("Attempting to connect to '%s@%s'...\n", h.Username(), h.IP())
 			pwd, err := dictAttack(h, dict, config.Port(), config.Verbose())
-			if err != nil {
-				log.Fatalln(err.Error())
+			if err != nil && config.Verbose() {
+				log.Println(err.Error())
 			}
-			if pwd != "" {
-				fmt.Printf("Password of '%s' found: %s\n", h.Username()+"@"+h.IP(), pwd)
-			} else {
+
+			// If pwd is "", the password was not found using the dictionary
+			if pwd == "" {
 				fmt.Printf("Unable to find password of '%s'\n", h.Username()+"@"+h.IP())
+			} else {
+				fmt.Printf("Password of '%s' found: %s\n", h.Username()+"@"+h.IP(), pwd)
 			}
 		}
 	case "hostlist":
@@ -105,23 +108,26 @@ func main() {
 			log.Fatalln(err.Error())
 		}
 
+		// Loop through host list and append found username, hostname and password-combinations to a map
 		var hostPwdCombos = map[string]string{}
 		for i, h := range hl.Hosts() {
 			fmt.Printf("%d%% done\n", int(math.Round(float64(i)/float64(len(hl.Hosts()))*100)))
 			fmt.Printf("Attempting to connect to '%s@%s'...\n", h.Username(), h.IP())
 			pwd, err := dictAttack(h, dict, config.Port(), config.Verbose())
-			if err != nil {
+			if err != nil && config.Verbose() {
 				log.Println(err.Error())
 			}
 
-			if pwd != "" {
+			// If pwd is "", the password was not found using the dictionary
+			if pwd == "" {
+				fmt.Printf("Unable to find password of '%s'\n", h.Username()+"@"+h.IP())
+			} else {
 				hostPwdCombos[h.Username()+"@"+h.IP()] = pwd
 				fmt.Printf("Password of '%s' found: %s\n", h.Username()+"@"+h.IP(), pwd)
-			} else {
-				fmt.Printf("Unable to find password of '%s'\n", h.Username()+"@"+h.IP())
 			}
 		}
 
+		// Print all found combinations
 		if len(hostPwdCombos) > 0 {
 			fmt.Println("The following combinations were found: ")
 			for host, pwd := range hostPwdCombos {
