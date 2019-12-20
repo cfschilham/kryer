@@ -1,4 +1,4 @@
 verbose: false
-mode: "manual" # manual/hostlist/json
+mode: "manual" # manual/hostlist
 dict_path: "cfg/dict.txt" # from main directory
 hostlist_path: "cfg/hostlist.txt"
