@@ -13,16 +13,17 @@ type Config struct {
 	verbose bool
 	mode,
 	dictPath,
-	hostlistPath,
-	jsonInPath,
-	jsonOutPath string
+	hostlistPath string
 }
 
-// Dict is used to load a dictionary of passwords from the configured dictionary file
+// Dict is used to load a dictionary of passwords from the configured dictionary file,
+// Dict.pwds represents the data stored in the dict file.
 type Dict struct {
 	pwds []string
 }
 
+// Hostlist is used to load a list of hostnames from the configured hostlist file,
+// Hostlist.hosts represents the data stored in the hostlist file.
 type Hostlist struct {
 	hosts []string
 }
@@ -47,16 +48,6 @@ func (c *Config) HostlistPath() string {
 	return c.hostlistPath
 }
 
-// JSONInPath returns the value of jsonInPath in a Config type
-func (c *Config) JSONInPath() string {
-	return c.jsonInPath
-}
-
-// JSONOutPath returns the value of jsonOutPath in a Config type
-func (c *Config) JSONOutPath() string {
-	return c.jsonOutPath
-}
-
 // Pwds returns the value of pwds in a Dict type
 func (d *Dict) Pwds() []string {
 	return d.pwds
@@ -70,7 +61,7 @@ func (hl *Hostlist) Hosts() []string {
 // LoadConfig returns a config type based on the values in cfg/config.yml
 func LoadConfig() (*Config, error) {
 	viper.SetConfigName("config")
-	viper.AddConfigPath("../cfg")
+	viper.AddConfigPath("cfg")
 	if err := viper.ReadInConfig(); err != nil {
 		return &Config{}, fmt.Errorf("internal/loadcfg: failed to load config: %s", err.Error())
 	}
@@ -80,13 +71,13 @@ func LoadConfig() (*Config, error) {
 		mode:         viper.GetString("mode"),
 		dictPath:     viper.GetString("dict_path"),
 		hostlistPath: viper.GetString("hostlist_path"),
-		jsonInPath:   viper.GetString("json_input_path"),
-		jsonOutPath:  viper.GetString("json_output_path"),
 	}
 	return c, nil
 }
 
-func txtToStringArr(path string) ([]string, error) {
+// fToStrSlc opens a file at the given path and returns a string slice.
+// For every line of the file a new entry is appended to the string slice.
+func fToStrSlc(path string) ([]string, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return []string{}, err
@@ -107,7 +98,7 @@ func txtToStringArr(path string) ([]string, error) {
 
 // LoadDict loads all entries from the file at the given path (designed for txt files) and returns them in the form of a Dictionary struct
 func LoadDict(path string) (*Dict, error) {
-	sArr, err := txtToStringArr(path)
+	sArr, err := fToStrSlc(path)
 	if err != nil {
 		return &Dict{}, fmt.Errorf("internal/loadcfg: failed to open %s: %s", path, err.Error())
 	}
@@ -116,7 +107,7 @@ func LoadDict(path string) (*Dict, error) {
 
 // LoadHostlist loads all entries from the file at the given path (designed for txt files) and returns them in the form of a Hostlist struct
 func LoadHostlist(path string) (*Hostlist, error) {
-	sArr, err := txtToStringArr(path)
+	sArr, err := fToStrSlc(path)
 	if err != nil {
 		return &Hostlist{}, fmt.Errorf("internal/loadcfg: failed to open %s: %s", path, err.Error())
 	}
