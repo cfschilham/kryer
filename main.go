@@ -61,7 +61,7 @@ func dictAttack(hostname string, dict *loadcfg.Dict, verbose bool) {
 }
 
 func main() {
-	fmt.Println("AutoSSH v0.2.1 - https://github.com/cfschilham/autossh")
+	fmt.Println("AutoSSH v0.2.2 - https://github.com/cfschilham/autossh")
 
 	fmt.Println("Loading cfg/config.yml...")
 	config, err := loadcfg.LoadConfig()
