@@ -67,9 +67,9 @@ func main() {
 	switch config.Mode() {
 	case "manual":
 		if config.UsrIsHost() {
-			fmt.Println("You currently have 'user_is_host' enabled in cfg/config.yml. This means ip adresses are inferred, meaning you only have to enter the username. Read config for details.")
+			fmt.Println("You currently have 'user_is_host' enabled in cfg/config.yml. This means an input of, for example, 'pcname' will be inferred as 'pcname@pcname.local'")
 		} else {
-			fmt.Println("Example input: 'john@johns-pc.local', peter@192.168.1.2")
+			fmt.Println("Example input: 'john@johns-pc.local', 'peter@192.168.1.2'")
 		}
 
 		for {

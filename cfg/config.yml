@@ -1,5 +1,5 @@
 verbose: false
-user_is_host: true # when enabled, entries in hostlist will automatically be interpreted as username@username.local
+user_is_host: true # when enabled, all host input will automatically be interpreted as exinput@exinput.local (example with input 'exinput') whether it is from a hostlist or manual entry
 mode: "manual" # manual/hostlist
 port: "22" # ssh port to connect to, conventionally 22
 dict_path: "cfg/dict.txt"
