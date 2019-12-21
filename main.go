@@ -91,13 +91,8 @@ func main() {
 			fmt.Printf("Attempting to connect to '%s@%s'...\n", h.Username(), h.IP())
 			pwd, err := dictAttack(h, dict, config.Port(), config.Verbose())
 			if err != nil {
-				if err.Error() == "main: failed to authenticate with dictionary" {
-					fmt.Println("Unable to authenticate using dictionary")
-					continue
-				} else {
-					log.Println(err.Error())
-					continue
-				}
+				log.Println(err.Error())
+				continue
 			}
 			fmt.Printf("Password of '%s' found: %s\n", h.Username()+"@"+h.IP(), pwd)
 		}
@@ -116,13 +111,8 @@ func main() {
 			fmt.Printf("Attempting to connect to '%s@%s'...\n", h.Username(), h.IP())
 			pwd, err := dictAttack(h, dict, config.Port(), config.Verbose())
 			if err != nil {
-				if err.Error() == "main: failed to authenticate with dictionary" {
-					fmt.Println("Unable to authenticate using dictionary")
-					continue
-				} else {
-					log.Println(err.Error())
-					continue
-				}
+				log.Println(err.Error())
+				continue
 			}
 			fmt.Printf("Password of '%s' found: %s\n", h.Username()+"@"+h.IP(), pwd)
 			hostPwdCombos[h.IP()] = pwd
