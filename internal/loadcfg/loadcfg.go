@@ -25,18 +25,10 @@ type Dict struct {
 	pwds []string
 }
 
-// Host is used exclusively in a Hostlist type to represent a combination of a username
-// and an ip to connect to via SSH.
+// Host is used to represent a combination of a username and an ip to connect to via SSH.
 type Host struct {
 	username,
 	ip string
-}
-
-// Hostlist is used to load a list of hostnames from the configured hostlist file,
-// Hostlist.hosts represents the data stored in the hostlist file, with separated
-// usernames and ip's.
-type Hostlist struct {
-	hosts []Host
 }
 
 // Verbose returns the value of verbose in a Config type.
@@ -84,17 +76,12 @@ func (h *Host) Username() string {
 	return h.username
 }
 
-// Hosts returns the value of hosts in a Hostlist type.
-func (hl *Hostlist) Hosts() []Host {
-	return hl.hosts
-}
-
 // LoadConfig returns a config type based on the values in cfg/config.yml.
 func LoadConfig() (*Config, error) {
 	viper.SetConfigName("config")
 	viper.AddConfigPath("cfg")
 	if err := viper.ReadInConfig(); err != nil {
-		return &Config{}, fmt.Errorf("internal/loadcfg: failed to load config: %s", err.Error())
+		return nil, fmt.Errorf("internal/loadcfg: failed to load config: %s", err.Error())
 	}
 
 	c := &Config{
@@ -113,7 +100,7 @@ func LoadConfig() (*Config, error) {
 func fToStrSlc(path string) ([]string, error) {
 	f, err := os.Open(path)
 	if err != nil {
-		return []string{}, err
+		return nil, err
 	}
 	defer f.Close()
 
@@ -123,7 +110,7 @@ func fToStrSlc(path string) ([]string, error) {
 		slc = append(slc, sc.Text())
 	}
 	if sc.Err() != nil {
-		return []string{}, sc.Err()
+		return nil, sc.Err()
 	}
 
 	return slc, nil
@@ -134,7 +121,7 @@ func fToStrSlc(path string) ([]string, error) {
 func LoadDict(path string) (*Dict, error) {
 	slc, err := fToStrSlc(path)
 	if err != nil {
-		return &Dict{}, fmt.Errorf("internal/loadcfg: failed to open %s: %s", path, err.Error())
+		return nil, fmt.Errorf("internal/loadcfg: failed to open %s: %s", path, err.Error())
 	}
 	return &Dict{pwds: slc}, nil
 }
@@ -172,7 +159,7 @@ func strSlcToHosts(slc []string, usrIsHost bool) ([]Host, error) {
 	for _, str := range slc {
 		host, err := StrToHost(str, usrIsHost)
 		if err != nil {
-			return []Host{}, err
+			return nil, err
 		}
 		hostSlc = append(hostSlc, host)
 	}
@@ -180,18 +167,18 @@ func strSlcToHosts(slc []string, usrIsHost bool) ([]Host, error) {
 }
 
 // LoadHostlist loads all entries from the file at the given path (designed for txt files) and
-// returns them in the form of a Hostlist struct. usrIsHost determines whether or not the ip is the
+// returns them in the form of a slice of Host types. usrIsHost determines whether or not the ip is the
 // same as username + ".local".
-func LoadHostlist(path string, usrIsHost bool) (*Hostlist, error) {
+func LoadHostlist(path string, usrIsHost bool) ([]Host, error) {
 	slc, err := fToStrSlc(path)
 	if err != nil {
-		return &Hostlist{}, fmt.Errorf("internal/loadcfg: failed to open %s: %s", path, err.Error())
+		return nil, fmt.Errorf("internal/loadcfg: failed to open %s: %s", path, err.Error())
 	}
 
-	hosts, err := strSlcToHosts(slc, usrIsHost)
+	hSlc, err := strSlcToHosts(slc, usrIsHost)
 	if err != nil {
 		return nil, err
 	}
 
-	return &Hostlist{hosts: hosts}, nil
+	return hSlc, nil
 }

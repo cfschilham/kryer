@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"errors"
 	"fmt"
 	"log"
@@ -73,9 +74,14 @@ func main() {
 		}
 
 		for {
-			var input string
 			fmt.Print("Enter host (type 'exit' to exit): ")
-			fmt.Scanln(&input)
+			sc := bufio.NewScanner(os.Stdin)
+			sc.Scan()
+			input := sc.Text()
+			if sc.Err() != nil {
+				log.Println(sc.Err())
+				continue
+			}
 
 			if input == "exit" {
 				os.Exit(0)
@@ -99,15 +105,15 @@ func main() {
 
 	case "hostlist":
 		fmt.Printf("Loading %s...\n", config.HostlistPath())
-		hl, err := loadcfg.LoadHostlist(config.HostlistPath(), config.UsrIsHost())
+		hSlc, err := loadcfg.LoadHostlist(config.HostlistPath(), config.UsrIsHost())
 		if err != nil {
 			log.Fatalln(err.Error())
 		}
 
 		// Loop through host list and append found username, hostname and password-combinations to a map
 		var hostPwdCombos = map[string]string{}
-		for i, h := range hl.Hosts() {
-			fmt.Printf("%d%% done\n", int(math.Round(float64(i)/float64(len(hl.Hosts()))*100)))
+		for i, h := range hSlc {
+			fmt.Printf("%d%% done\n", int(math.Round(float64(i)/float64(len(hSlc))*100)))
 			fmt.Printf("Attempting to connect to '%s@%s'...\n", h.Username(), h.IP())
 			pwd, err := dictAttack(h, dict, config.Port(), config.Verbose())
 			if err != nil {
