@@ -59,6 +59,7 @@ func sshDictMT(host loadcfg.Host, pwds []string, config *loadcfg.Config) (string
 			foundPwd <- pwd
 		}(foundPwd, host, pwds, config.Port(), pwd)
 	}
+
 	select {
 	case pwd := <-foundPwd:
 		return pwd, nil
@@ -70,12 +71,12 @@ func sshDictMT(host loadcfg.Host, pwds []string, config *loadcfg.Config) (string
 func sshDict(host loadcfg.Host, dict *loadcfg.Dict, config *loadcfg.Config) (string, error) {
 	if config.MultiThreaded() { // Multi threaded.
 
-		for i := config.MaxConns(); i < len(dict.Pwds()); i += config.MaxConns() {
+		for i := config.MaxThreads(); i < len(dict.Pwds()); i += config.MaxThreads() {
 			if pwd, err := sshDictMT(host, dict.Pwds()[:i], config); err != nil {
 
 				// If this is the last password in the dictionary, we don't need
 				// to go though the rest of the passwords which remain after all
-				// chunks of length `config.MaxConns()` have been completed
+				// chunks of length `config.MaxThreads()` have been completed
 				if i == len(dict.Pwds())-1 {
 					return "", err
 				}
@@ -85,8 +86,9 @@ func sshDict(host loadcfg.Host, dict *loadcfg.Dict, config *loadcfg.Config) (str
 			}
 		}
 
-		// Go through the last few passwords, where the previous loop left off.
-		startIdx := len(dict.Pwds()) - (len(dict.Pwds()) % config.MaxConns())
+		// Go through the last few passwords, where the previous loop left off because.
+		startIdx := len(dict.Pwds()) - (len(dict.Pwds()) % config.MaxThreads())
+
 		if pwd, err := sshDictMT(host, dict.Pwds()[startIdx:], config); err != nil {
 			return "", err
 		} else {
@@ -115,7 +117,7 @@ func sshDict(host loadcfg.Host, dict *loadcfg.Dict, config *loadcfg.Config) (str
 }
 
 func main() {
-	fmt.Println("AutoSSH v1.0.1 - https://github.com/cfschilham/autossh")
+	fmt.Println("AutoSSH v1.1.0 - https://github.com/cfschilham/autossh")
 
 	fmt.Println("Loading cfg/config.yml...")
 	config, err := loadcfg.LoadConfig()

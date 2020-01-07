@@ -14,7 +14,7 @@ type Config struct {
 	verbose,
 	usrIsHost,
 	multiThreaded bool
-	maxConns int
+	maxThreads int
 	mode,
 	port,
 	dictPath,
@@ -48,9 +48,9 @@ func (c *Config) MultiThreaded() bool {
 	return c.multiThreaded
 }
 
-// MaxConns returns the value of maxConns in a Config type.
-func (c *Config) MaxConns() int {
-	return c.maxConns
+// MaxThreads returns the value of maxThreads in a Config type.
+func (c *Config) MaxThreads() int {
+	return c.maxThreads
 }
 
 // Mode returns the value of mode in a Config type.
@@ -100,7 +100,7 @@ func LoadConfig() (*Config, error) {
 		verbose:       viper.GetBool("verbose"),
 		usrIsHost:     viper.GetBool("user_is_host"),
 		multiThreaded: viper.GetBool("multi_threaded"),
-		maxConns:      viper.GetInt("max_connections"),
+		maxThreads:    viper.GetInt("max_threads"),
 		mode:          viper.GetString("mode"),
 		port:          viper.GetString("port"),
 		dictPath:      viper.GetString("dict_path"),
