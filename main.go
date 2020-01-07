@@ -85,8 +85,12 @@ func sshDictMT(host loadcfg.Host, pwds []string, config *loadcfg.Config) (string
 func sshDict(host loadcfg.Host, dict *loadcfg.Dict, config *loadcfg.Config) (string, error) {
 	if config.MultiThreaded() { // Multi threaded.
 
-		for i := config.MaxThreads(); i < len(dict.Pwds()); i += config.MaxThreads() {
-			if pwd, err := sshDictMT(host, dict.Pwds()[:i], config); err != nil {
+		for i := config.MaxThreads() - 1; i < len(dict.Pwds()); i += config.MaxThreads() {
+			if pwd, err := sshDictMT(host, dict.Pwds()[i-config.MaxThreads()+1:i+1], config); err != nil {
+
+				if err.Error() != "main: failed to authenticate" {
+					return "", err
+				}
 
 				// If this is the last password in the dictionary, we can stop here.
 				if i == len(dict.Pwds())-1 {
@@ -99,7 +103,7 @@ func sshDict(host loadcfg.Host, dict *loadcfg.Dict, config *loadcfg.Config) (str
 		}
 
 		// Go through the last few passwords, where the previous loop left off because.
-		startIdx := len(dict.Pwds()) - (len(dict.Pwds()) % config.MaxThreads())
+		startIdx := len(dict.Pwds()) - (len(dict.Pwds()) % config.MaxThreads()) - 1
 
 		if pwd, err := sshDictMT(host, dict.Pwds()[startIdx:], config); err != nil {
 			return "", err
