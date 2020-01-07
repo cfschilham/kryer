@@ -12,7 +12,9 @@ import (
 // Config is used to load config values from cfg/config.yml
 type Config struct {
 	verbose,
-	usrIsHost bool
+	usrIsHost,
+	multiThreaded bool
+	maxConns int
 	mode,
 	port,
 	dictPath,
@@ -39,6 +41,16 @@ func (c *Config) Verbose() bool {
 // UsrIsHost returns the value of usrIsHost in a Config type.
 func (c *Config) UsrIsHost() bool {
 	return c.usrIsHost
+}
+
+// MultiThreaded returns the value of multiThreaded in a Config type.
+func (c *Config) MultiThreaded() bool {
+	return c.multiThreaded
+}
+
+// MaxConns returns the value of maxConns in a Config type.
+func (c *Config) MaxConns() int {
+	return c.maxConns
 }
 
 // Mode returns the value of mode in a Config type.
@@ -85,12 +97,14 @@ func LoadConfig() (*Config, error) {
 	}
 
 	c := &Config{
-		verbose:      viper.GetBool("verbose"),
-		usrIsHost:    viper.GetBool("user_is_host"),
-		mode:         viper.GetString("mode"),
-		port:         viper.GetString("port"),
-		dictPath:     viper.GetString("dict_path"),
-		hostlistPath: viper.GetString("hostlist_path"),
+		verbose:       viper.GetBool("verbose"),
+		usrIsHost:     viper.GetBool("user_is_host"),
+		multiThreaded: viper.GetBool("multi_threaded"),
+		maxConns:      viper.GetInt("max_connections"),
+		mode:          viper.GetString("mode"),
+		port:          viper.GetString("port"),
+		dictPath:      viper.GetString("dict_path"),
+		hostlistPath:  viper.GetString("hostlist_path"),
 	}
 	return c, nil
 }

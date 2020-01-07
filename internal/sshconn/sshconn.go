@@ -5,7 +5,7 @@ import (
 )
 
 // SSHConn attempts to connect to a remote SSH port given the host ip, port, username
-// and password. A returned error of nil indicates a successful connection.
+// and password. A returned error of nil indicates a successful connection. No further
 func SSHConn(host, user, port, pass string) error {
 	sshConfig := &ssh.ClientConfig{
 		User: user,
@@ -21,11 +21,6 @@ func SSHConn(host, user, port, pass string) error {
 		return err
 	}
 
-	session, err := conn.NewSession()
-	if err != nil {
-		return err
-	}
-
-	session.Close()
+	conn.Close()
 	return nil
 }
