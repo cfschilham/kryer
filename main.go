@@ -112,16 +112,16 @@ func main() {
 
 		// Loop through host list and append found username, hostname and password-combinations to a map
 		var hostPwdCombos = map[string]string{}
-		for i, h := range hSlc {
+		for i, host := range hSlc {
 			fmt.Printf("%d%% done\n", int(math.Round(float64(i)/float64(len(hSlc))*100)))
-			fmt.Printf("Attempting to connect to '%s@%s'...\n", h.Username(), h.IP())
-			pwd, err := dictAttack(h, dict, config.Port(), config.Verbose())
+			fmt.Printf("Attempting to connect to '%s@%s'...\n", host.Username(), host.IP())
+			pwd, err := dictAttack(host, dict, config.Port(), config.Verbose())
 			if err != nil {
 				log.Println(err.Error())
 				continue
 			}
-			fmt.Printf("Password of '%s' found: %s\n", h.Username()+"@"+h.IP(), pwd)
-			hostPwdCombos[h.IP()] = pwd
+			fmt.Printf("Password of '%s' found: '%s'\n", host.Username()+"@"+host.IP(), pwd)
+			hostPwdCombos[host.IP()] = pwd
 		}
 
 		// Print all found combinations
