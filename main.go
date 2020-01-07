@@ -42,27 +42,41 @@ func wgToChan(wg *sync.WaitGroup) chan int {
 func sshDictMT(host loadcfg.Host, pwds []string, config *loadcfg.Config) (string, error) {
 	// Define channel for passing found password and waitgroup for
 	// when all goroutines return nothing (because of an error).
-	foundPwd := make(chan string, 1)
+	foundPwd, nonAuthErr := make(chan string, 1), make(chan error, 1)
 	var wg sync.WaitGroup
 	wg.Add(len(pwds))
 
 	for _, pwd := range pwds {
 		if config.Verbose() {
-			fmt.Printf("Trying to connect with password %s\n", pwd)
+			fmt.Printf("Trying to connect with password '%s'\n", pwd)
 		}
 
-		go func(foundPwd chan string, host loadcfg.Host, pwds []string, port, pwd string) {
+		go func(foundPwd chan string, nonAuthErr chan error, host loadcfg.Host, port, pwd string) {
 			defer wg.Done()
 			if err := sshconn.SSHConn(host.IP(), host.Username(), port, pwd); err != nil {
+
+				// If the non-nil error is not an auth error an error is passed because this means it does not have anything to do with the
+				// password being wrong and we want to stop attempting passwords on this host. If it is an auth error, however, we simply
+				// move on to the next `pwd` in `pwds`
+				if !inStrSlc(err.Error(), authErrs) {
+					nonAuthErr <- err
+				}
 				return
 			}
 			foundPwd <- pwd
-		}(foundPwd, host, pwds, config.Port(), pwd)
+		}(foundPwd, nonAuthErr, host, config.Port(), pwd)
 	}
 
 	select {
 	case pwd := <-foundPwd:
 		return pwd, nil
+
+	case err := <-nonAuthErr:
+		return "", err
+
+	// `<-wgToChan(&wg)` waits for all threads to finish, utilizing the waitgroup. If this is reached
+	// it very often means all threads returned an auth error. The only exception is if `wg.Wait()`
+	// and `<-foundPwd` stop blocking at the exact same time.
 	case <-wgToChan(&wg):
 		return "", errors.New("main: failed to authenticate")
 	}
@@ -74,9 +88,7 @@ func sshDict(host loadcfg.Host, dict *loadcfg.Dict, config *loadcfg.Config) (str
 		for i := config.MaxThreads(); i < len(dict.Pwds()); i += config.MaxThreads() {
 			if pwd, err := sshDictMT(host, dict.Pwds()[:i], config); err != nil {
 
-				// If this is the last password in the dictionary, we don't need
-				// to go though the rest of the passwords which remain after all
-				// chunks of length `config.MaxThreads()` have been completed
+				// If this is the last password in the dictionary, we can stop here.
 				if i == len(dict.Pwds())-1 {
 					return "", err
 				}
@@ -102,8 +114,10 @@ func sshDict(host loadcfg.Host, dict *loadcfg.Dict, config *loadcfg.Config) (str
 				fmt.Printf("Trying to connect with password '%s'\n", pwd)
 			}
 			if err := sshconn.SSHConn(host.IP(), host.Username(), config.Port(), pwd); err != nil {
+
 				// If the non-nil error is not an auth error an error is returned because this means it does not have anything to do with the
-				// password being wrong. If it is an auth error, however, we simply move on to the next pwd in dict.Pwds()
+				// password being wrong and we want to stop attempting passwords on this host. If it is an auth error, however, we simply
+				// move on to the next `pwd` in `dict.Pwds()`
 				if !inStrSlc(err.Error(), authErrs) {
 					return "", err
 				}
@@ -117,7 +131,7 @@ func sshDict(host loadcfg.Host, dict *loadcfg.Dict, config *loadcfg.Config) (str
 }
 
 func main() {
-	fmt.Println("AutoSSH v1.1.0 - https://github.com/cfschilham/autossh")
+	fmt.Println("AutoSSH v1.1.1 - https://github.com/cfschilham/autossh")
 
 	fmt.Println("Loading cfg/config.yml...")
 	config, err := loadcfg.LoadConfig()
