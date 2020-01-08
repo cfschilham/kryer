@@ -109,9 +109,9 @@ func LoadConfig() (*Config, error) {
 	return c, nil
 }
 
-// fToStrSlc opens a file at the given path and returns a string slice.
+// fileToSlice opens a file at the given path and returns a string slice.
 // For every line of the file a new entry is appended to the string slice.
-func fToStrSlc(path string) ([]string, error) {
+func fileToSlice(path string) ([]string, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -133,7 +133,7 @@ func fToStrSlc(path string) ([]string, error) {
 // LoadDict loads all entries from the file at the given path (designed for txt files) and returns
 // them in the form of a Dictionary struct.
 func LoadDict(path string) (*Dict, error) {
-	slc, err := fToStrSlc(path)
+	slc, err := fileToSlice(path)
 	if err != nil {
 		return nil, fmt.Errorf("internal/loadcfg: failed to open %s: %s", path, err.Error())
 	}
@@ -184,7 +184,7 @@ func strSlcToHosts(slc []string, usrIsHost bool) ([]Host, error) {
 // returns them in the form of a slice of Host types. usrIsHost determines whether or not the ip is the
 // same as username + ".local".
 func LoadHostlist(path string, usrIsHost bool) ([]Host, error) {
-	slc, err := fToStrSlc(path)
+	slc, err := fileToSlice(path)
 	if err != nil {
 		return nil, fmt.Errorf("internal/loadcfg: failed to open %s: %s", path, err.Error())
 	}
