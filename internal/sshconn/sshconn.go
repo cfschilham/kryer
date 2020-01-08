@@ -79,7 +79,7 @@ func SSHDictMT(host loadcfg.Host, config *loadcfg.Config, pwds []string) (string
 	case pwd := <-pwdChan:
 		return pwd, nil
 	case err := <-errChan:
-		return "", fmt.Errorf("internal/sshconn: %s", err.Error())
+		return "", err
 	case <-SendChanOnWGWait(&wg):
 		return "", errors.New("internal/sshconn: unable to authenticate with dictionary")
 	}
@@ -117,46 +117,46 @@ func SSHDict(host loadcfg.Host, config *loadcfg.Config, dict *loadcfg.Dict) (str
 		// its condition is not satisfied. We can simply execute a single instance of `SSHDictMT()`
 		// with all the passwords because there aren't more passwords than maximum threads.
 		if len(dict.Pwds()) < config.MaxThreads() {
-			if pwd, err := SSHDictMT(host, config, dict.Pwds()); err != nil {
+			pwd, err := SSHDictMT(host, config, dict.Pwds())
+			if err != nil {
 				return "", err
-			} else {
-				// If the error is nil, the password has been found
-				return pwd, nil
 			}
+			// If the error is nil, the password has been found
+			return pwd, nil
 		}
 
 		// Continue where the first loop left off, this loop contains fewer entries than `max_threads` from
 		// config.
 		idx := len(dict.Pwds()) - config.MaxThreads() + 1 // One further than the last one from the previous loop.
-		if pwd, err := SSHDictMT(host, config, dict.Pwds()[idx:]); err != nil {
+
+		pwd, err := SSHDictMT(host, config, dict.Pwds()[idx:])
+		if err != nil {
 			return "", err
-		} else {
-			// If the error is nil, the password has been found
-			return pwd, nil
 		}
+		// If the error is nil, the password has been found
+		return pwd, nil
 
-	} else {
-		// Single-threaded mode
-
-		// Loop through all entries of the dictionary.
-		for _, pwd := range dict.Pwds() {
-			if config.Verbose() {
-				fmt.Printf("Trying to connect with password '%s'\n", pwd)
-			}
-
-			if err := SSHConn(host.IP(), host.Username(), config.Port(), pwd); err != nil {
-				// If the non-nil error is not an auth error, an error is passed because this means
-				// it does not have anything to do with the password being wrong and we want to stop
-				// attempting passwords on this host. If it is an auth error, however, we simply move
-				// on to the next `pwd` in `pwds`
-				if !strings.Contains(err.Error(), authErrSubstring) {
-					return "", fmt.Errorf("internal/sshconn: %s", err.Error())
-				}
-				continue
-			}
-			return pwd, nil
-		}
-		// If this point is reached all passwords in the dictionary have been tried and all returned an auth error.
-		return "", errors.New("internal/sshconn: unable to authenticate with dictionary")
 	}
+	// Single-threaded mode
+
+	// Loop through all entries of the dictionary.
+	for _, pwd := range dict.Pwds() {
+		if config.Verbose() {
+			fmt.Printf("Trying to connect with password '%s'\n", pwd)
+		}
+
+		if err := SSHConn(host.IP(), host.Username(), config.Port(), pwd); err != nil {
+			// If the non-nil error is not an auth error, an error is passed because this means
+			// it does not have anything to do with the password being wrong and we want to stop
+			// attempting passwords on this host. If it is an auth error, however, we simply move
+			// on to the next `pwd` in `pwds`
+			if !strings.Contains(err.Error(), authErrSubstring) {
+				return "", fmt.Errorf("internal/sshconn: %s", err.Error())
+			}
+			continue
+		}
+		return pwd, nil
+	}
+	// If this point is reached all passwords in the dictionary have been tried and all returned an auth error.
+	return "", errors.New("internal/sshconn: unable to authenticate with dictionary")
 }
