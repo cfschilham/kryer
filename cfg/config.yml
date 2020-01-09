@@ -1,7 +1,7 @@
 verbose: false
 user_is_host: false # when enabled, all host input will automatically be interpreted as exinput@exinput.local (example with input 'exinput') whether it is from a hostlist or manual entry
 multi_threaded: true # when enabled, each password from the `dict_path` file will spawn a new thread
-max_threads: 20 # maximum amount of concurrent connections in multi threaded mode
+max_threads: 10 # maximum amount of concurrent connections in multi threaded mode
 mode: "manual" # manual/hostlist
 port: "22" # ssh port to connect to, conventionally 22
 dict_path: "cfg/dict.txt"

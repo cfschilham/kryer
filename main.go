@@ -8,7 +8,7 @@ import (
 	"os"
 
 	"github.com/cfschilham/autossh/internal/loadcfg"
-	"github.com/cfschilham/autossh/internal/sshconn"
+	"github.com/cfschilham/autossh/internal/sshatk"
 )
 
 func main() {
@@ -56,7 +56,7 @@ func main() {
 			}
 
 			fmt.Printf("Attempting to connect to '%s@%s'...\n", host.Username(), host.IP())
-			pwd, err := sshconn.SSHDict(host, config, dict)
+			pwd, err := sshatk.SSHDict(host, config, dict)
 			if err != nil {
 				log.Println(err.Error())
 				continue
@@ -76,7 +76,7 @@ func main() {
 		for i, host := range hSlc {
 			fmt.Printf("%d%% done\n", int(math.Round(float64(i)/float64(len(hSlc))*100)))
 			fmt.Printf("Attempting to connect to '%s@%s'...\n", host.Username(), host.IP())
-			pwd, err := sshconn.SSHDict(host, config, dict)
+			pwd, err := sshatk.SSHDict(host, config, dict)
 			if err != nil {
 				log.Println(err.Error())
 				continue

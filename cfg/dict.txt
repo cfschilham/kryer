@@ -5,7 +5,6 @@
   
 1
 qwerty
-wachtwoord
 password
 \
 1234
