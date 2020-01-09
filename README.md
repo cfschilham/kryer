@@ -4,7 +4,7 @@ The simplest way to install is to download the pre-compiled binaries from the re
 Alternatively, you can build it yourself using the source files.  
   
 **Pre-Compiled Binaries**  
-Download the latest release from the [releases]([https://github.com/cfschilham/autossh/releases](https://github.com/cfschilham/autossh/releases)) which corresponds to your system.
+Download the latest release from the [releases tab](https://github.com/cfschilham/autossh/releases) which corresponds to your system.
 
   
 **Build from Source**  
