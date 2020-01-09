@@ -1,0 +1,7 @@
+example1@0.0.0.0
+example2@0.0.0.0
+example3@somehost.local
+
+usrishost-username
+username2
+username3

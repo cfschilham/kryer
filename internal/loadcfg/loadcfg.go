@@ -2,6 +2,7 @@ package loadcfg
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
 	"net"
@@ -90,7 +91,16 @@ func (h Host) Username() string {
 }
 
 func (h Host) ResolveIP() (string, error) {
-	ips, err := net.LookupIP(h.ip)
+	resolver := net.Resolver{
+		PreferGo: false,
+	}
+
+	unparsedIPS, err := resolver.LookupHost(context.Background(), h.ip)
+	var ips []net.IP
+	for _, unparsedIP := range unparsedIPS {
+		ips = append(ips, net.ParseIP(unparsedIP))
+	}
+
 	if err != nil {
 		return "", err
 	}
