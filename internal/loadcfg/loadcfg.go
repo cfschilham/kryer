@@ -21,8 +21,8 @@ type Config struct {
 	hostlistPath string
 }
 
-// Dict is used to load a dictionary of passwords from the configured dictionary file,
-// Dict.pwds represents the data stored in the dict file.
+// Dict is used to load a dictionary of passwords from the configured dictionary file, Dict.pwds
+// represents the data stored in the dict file.
 type Dict struct {
 	pwds []string
 }
@@ -109,8 +109,8 @@ func LoadConfig() (*Config, error) {
 	return c, nil
 }
 
-// fileToSlice opens a file at the given path and returns a string slice.
-// For every line of the file a new entry is appended to the string slice.
+// fileToSlice opens a file at the given path and returns a string slice. For every line of the
+// file a new entry is appended to the string slice.
 func fileToSlice(path string) ([]string, error) {
 	f, err := os.Open(path)
 	if err != nil {
@@ -140,8 +140,9 @@ func LoadDict(path string) (*Dict, error) {
 	return &Dict{pwds: slc}, nil
 }
 
-// StrToHost takes a string and returns a host. Strings should be passed in the form 'username@host' unless usrIsHost is true.
-// With usrIsHost enabled, for example, an input of 'user1' means an output of a Host struct with username: 'user1', ip: 'user1.local'.
+// StrToHost takes a string and returns a host. Strings should be passed in the form 'username@host'
+// unless usrIsHost is true. With usrIsHost enabled, for example, an input of 'user1' means an output
+// of a Host struct with username: 'user1', ip: 'user1.local'.
 func StrToHost(str string, usrIsHost bool) (Host, error) {
 	if str == "" {
 		return Host{}, errors.New("internal/loadcfg: empty string passed")
@@ -164,10 +165,10 @@ func StrToHost(str string, usrIsHost bool) (Host, error) {
 	return Host{}, fmt.Errorf("internal/loadcfg: invalid hostname '%s'", str)
 }
 
-// strSlcToHosts takes a slice of strings and returns a slice of hosts. These hosts
-// can be used to append to a Hostlist type. Strings should be passed in the form 'username@host'
-// unless usrIsHost is true. With usrIsHost enabled, for example, an input of 'user1' means an output of a Host struct
-// with username: 'user1', ip: 'user1.local'.
+// strSlcToHosts takes a slice of strings and returns a slice of hosts. These hostscan be used to append
+// to a Hostlist type. Strings should be passed in the form 'username@host' unless usrIsHost is true. With
+// usrIsHost enabled, for example, an input of 'user1' means an output of a Host struct with username:
+// 'user1', ip: 'user1.local'.
 func strSlcToHosts(slc []string, usrIsHost bool) ([]Host, error) {
 	var hostSlc []Host
 	for _, str := range slc {
