@@ -2,6 +2,9 @@ package sshconn
 
 import (
 	"fmt"
+	"net"
+	"strings"
+	"sync"
 
 	"golang.org/x/crypto/ssh"
 )
@@ -21,7 +24,7 @@ func SSHConn(host, username, port, pwd string) error {
 	}
 
 	// Attempt to connect to remote host.
-	conn, err := ssh.Dial("tcp", host+":"+port, clientConfig)
+	conn, err := ssh.Dial("tcp", net.JoinHostPort(host, port), clientConfig)
 	if err != nil {
 		return fmt.Errorf("internal/sshconn: %s", err.Error())
 	}
