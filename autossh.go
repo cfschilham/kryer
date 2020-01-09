@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	fmt.Println("AutoSSH v1.1.2 - https://github.com/cfschilham/autossh")
+	fmt.Println("AutoSSH v1.1.3 - https://github.com/cfschilham/autossh")
 
 	fmt.Println("Loading cfg/config.yml...")
 	config, err := loadcfg.LoadConfig()
@@ -56,7 +56,7 @@ func main() {
 			}
 
 			fmt.Printf("Attempting to connect to '%s@%s'...\n", host.Username(), host.IP())
-			pwd, err := sshatk.SSHDict(host, config, dict)
+			pwd, err := sshatk.SSHDict(host.IP(), host.Username(), config.Port(), dict.Pwds(), config)
 			if err != nil {
 				log.Println(err.Error())
 				continue
@@ -66,29 +66,29 @@ func main() {
 
 	case "hostlist":
 		fmt.Printf("Loading %s...\n", config.HostlistPath())
-		hSlc, err := loadcfg.LoadHostlist(config.HostlistPath(), config.UsrIsHost())
+		hosts, err := loadcfg.LoadHostlist(config.HostlistPath(), config.UsrIsHost())
 		if err != nil {
 			log.Fatalln(err.Error())
 		}
 
 		// Loop through host list and append found username, hostname and password-combinations to a map
-		var hostPwdCombos = map[string]string{}
-		for i, host := range hSlc {
-			fmt.Printf("%d%% done\n", int(math.Round(float64(i)/float64(len(hSlc))*100)))
+		var foundCredentials = map[string]string{}
+		for i, host := range hosts {
+			fmt.Printf("%d%% done\n", int(math.Round(float64(i)/float64(len(hosts))*100)))
 			fmt.Printf("Attempting to connect to '%s@%s'...\n", host.Username(), host.IP())
-			pwd, err := sshatk.SSHDict(host, config, dict)
+			pwd, err := sshatk.SSHDict(host.IP(), host.Username(), config.Port(), dict.Pwds(), config)
 			if err != nil {
 				log.Println(err.Error())
 				continue
 			}
 			fmt.Printf("Password of '%s' found: '%s'\n", host.Username()+"@"+host.IP(), pwd)
-			hostPwdCombos[host.IP()] = pwd
+			foundCredentials[host.IP()] = pwd
 		}
 
 		// Print all found combinations
-		if len(hostPwdCombos) > 0 {
+		if len(foundCredentials) > 0 {
 			fmt.Println("The following combinations were found: ")
-			for host, pwd := range hostPwdCombos {
+			for host, pwd := range foundCredentials {
 				fmt.Printf("Host: '%s' | Password: '%s'\n", host, pwd)
 			}
 		} else {

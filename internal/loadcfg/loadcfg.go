@@ -155,7 +155,7 @@ func StrToHost(str string, usrIsHost bool) (Host, error) {
 		}, nil
 	}
 	for i, char := range str {
-		if string(char) == "@" {
+		if string(char) == "@" && i != len(str)-1 {
 			return Host{
 				username: str[0:i],
 				ip:       str[i+1:],
@@ -169,7 +169,7 @@ func StrToHost(str string, usrIsHost bool) (Host, error) {
 // to a Hostlist type. Strings should be passed in the form 'username@host' unless usrIsHost is true. With
 // usrIsHost enabled, for example, an input of 'user1' means an output of a Host struct with username:
 // 'user1', ip: 'user1.local'.
-func strSlcToHosts(slc []string, usrIsHost bool) ([]Host, error) {
+func SlcToHosts(slc []string, usrIsHost bool) ([]Host, error) {
 	var hostSlc []Host
 	for _, str := range slc {
 		host, err := StrToHost(str, usrIsHost)
@@ -190,7 +190,7 @@ func LoadHostlist(path string, usrIsHost bool) ([]Host, error) {
 		return nil, fmt.Errorf("internal/loadcfg: failed to open %s: %s", path, err.Error())
 	}
 
-	hSlc, err := strSlcToHosts(slc, usrIsHost)
+	hSlc, err := SlcToHosts(slc, usrIsHost)
 	if err != nil {
 		return nil, err
 	}
