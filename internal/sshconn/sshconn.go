@@ -3,6 +3,7 @@ package sshconn
 import (
 	"errors"
 	"fmt"
+	"net"
 	"strings"
 	"sync"
 
@@ -25,7 +26,7 @@ func SSHConn(host, username, port, pwd string) error {
 	}
 
 	// Attempt to connect to remote host.
-	conn, err := ssh.Dial("tcp", host+":"+port, clientConfig)
+	conn, err := ssh.Dial("tcp", net.JoinHostPort(host, port), clientConfig)
 	if err != nil {
 		return fmt.Errorf("internal/sshconn: %s", err.Error())
 	}
