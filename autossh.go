@@ -71,28 +71,8 @@ func main() {
 			}
 			fmt.Printf("Password of '%s' found: %s\n", host.Username()+"@"+host.IP(), pwd)
 
-			switch config.ExportPwdToFile() {
-			case true:
-				f, err := os.OpenFile(config.PwdFilePath(), os.O_RDWR, 0644)
-				if err != nil {
-					fmt.Println(err)
-					return
-				}
-				s := fmt.Sprintf("Password of '%s' found: %s\n", host.Username()+"@"+host.IP(), pwd)
-				l, err := f.WriteString(s)
-				if err != nil {
-					fmt.Println(err)
-					f.Close()
-					return
-				}
-				fmt.Println(l, "bytes written successfully")
-				err = f.Close()
-				if err != nil {
-					fmt.Print(err)
-					return
-				}
-			case false:
-				continue
+			if config.ExportPwdToFile() {
+				loadcfg.ExportToFile(config.PwdFilePath(), host.Username()+"@"+host.IP(), pwd)
 			}
 		}
 
@@ -126,38 +106,16 @@ func main() {
 			foundCredentials[host.IP()+"@"+host.Username()] = pwd
 		}
 
-		// Print all found combinations
+		// Print all found combinations and export them to a file if that is selected in config.yml
 		if len(foundCredentials) > 0 {
 			fmt.Println("The following combinations were found: ")
 			for host, pwd := range foundCredentials {
 				fmt.Printf("Host: '%s' | Password: '%s'\n", host, pwd)
-			}
-			switch config.ExportPwdToFile() {
-			case true:
-				for host, pwd := range foundCredentials {
-					f, err := os.OpenFile(config.PwdFilePath(), os.O_RDWR, 0644)
-					if err != nil {
-						fmt.Println(err)
-						return
-					}
-					s := fmt.Sprintf("Password of '%s' found: %s\n", host.Username()+"@"+host.IP(), pwd)
-					l, err := f.WriteString(s)
-					if err != nil {
-						fmt.Println(err)
-						f.Close()
-						return
-					}
-					fmt.Println(l, "bytes written successfully")
-					err = f.Close()
-					if err != nil {
-						fmt.Print(err)
-						return
-					}
+				if config.ExportPwdToFile() {
+					loadcfg.ExportToFile(config.PwdFilePath(), host, pwd)
 				}
-			case false:
-				continue
 			}
-			}
+
 		} else {
 			fmt.Println("No combinations were found")
 		}

@@ -102,6 +102,7 @@ func (h Host) Username() string {
 	return h.username
 }
 
+// ResolveIP resolves the ip?
 func (h Host) ResolveIP() (string, error) {
 	resolver := net.Resolver{
 		PreferGo: false,
@@ -204,7 +205,7 @@ func StrToHost(str string, usrIsHost bool) (Host, error) {
 	return Host{}, fmt.Errorf("internal/loadcfg: invalid hostname '%s'", str)
 }
 
-// strSlcToHosts takes a slice of strings and returns a slice of hosts. These hostscan be used to append
+// SlcToHosts takes a slice of strings and returns a slice of hosts. These hostscan be used to append
 // to a Hostlist type. Strings should be passed in the form 'username@host' unless usrIsHost is true. With
 // usrIsHost enabled, for example, an input of 'user1' means an output of a Host struct with username:
 // 'user1', ip: 'user1.local'.
@@ -235,4 +236,19 @@ func LoadHostlist(path string, usrIsHost bool) ([]Host, error) {
 	}
 
 	return hSlc, nil
+}
+
+// ExportToFile exports all found username/password combinations to a .txt file
+func ExportToFile(filePath, host, pwd string) error {
+	f, err := os.OpenFile(filePath, os.O_RDWR, 0644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	str := fmt.Sprintf("Host: '%s' | Password: '%s'\n", host, pwd)
+	if _, err := f.WriteString(str); err != nil {
+		return err
+	}
+	return nil
 }
