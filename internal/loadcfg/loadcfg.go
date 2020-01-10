@@ -15,12 +15,14 @@ import (
 type Config struct {
 	verbose,
 	usrIsHost,
-	multiThreaded bool
+	multiThreaded,
+	exportPwdToFile bool
 	maxThreads int
 	mode,
 	port,
 	dictPath,
-	hostlistPath string
+	hostlistPath,
+	pwdFilePath string
 }
 
 // Dict is used to load a dictionary of passwords from the configured dictionary file, Dict.pwds
@@ -50,6 +52,11 @@ func (c Config) MultiThreaded() bool {
 	return c.multiThreaded
 }
 
+// ExportPwdToFile returns the value of exportPwdToFile in a Config type
+func (c Config) ExportPwdToFile() bool {
+	return c.exportPwdToFile
+}
+
 // MaxThreads returns the value of maxThreads in a Config type.
 func (c Config) MaxThreads() int {
 	return c.maxThreads
@@ -73,6 +80,11 @@ func (c Config) DictPath() string {
 // HostlistPath returns the value of hostlistPath in a Config type.
 func (c Config) HostlistPath() string {
 	return c.hostlistPath
+}
+
+// PwdFilePath returns the value of pwdFilePath in a Config type.
+func (c Config) PwdFilePath() string {
+	return c.pwdFilePath
 }
 
 // Pwds returns the value of pwds in a Dict type.
@@ -122,14 +134,16 @@ func LoadConfig() (*Config, error) {
 	}
 
 	c := &Config{
-		verbose:       viper.GetBool("verbose"),
-		usrIsHost:     viper.GetBool("user_is_host"),
-		multiThreaded: viper.GetBool("multi_threaded"),
-		maxThreads:    viper.GetInt("max_threads"),
-		mode:          viper.GetString("mode"),
-		port:          viper.GetString("port"),
-		dictPath:      viper.GetString("dict_path"),
-		hostlistPath:  viper.GetString("hostlist_path"),
+		verbose:         viper.GetBool("verbose"),
+		usrIsHost:       viper.GetBool("user_is_host"),
+		multiThreaded:   viper.GetBool("multi_threaded"),
+		exportPwdToFile: viper.GetBool("export_pwd_to_file"),
+		maxThreads:      viper.GetInt("max_threads"),
+		mode:            viper.GetString("mode"),
+		port:            viper.GetString("port"),
+		dictPath:        viper.GetString("dict_path"),
+		hostlistPath:    viper.GetString("hostlist_path"),
+		pwdFilePath:     viper.GetString("pwd_file_path"),
 	}
 	return c, nil
 }
