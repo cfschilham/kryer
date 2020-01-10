@@ -26,6 +26,13 @@ func main() {
 		log.Fatalln(err.Error())
 	}
 
+	fmt.Printf("Checking if password file is present at %s...\n", config.PwdFilePath())
+	if _, err := os.Stat(config.PwdFilePath()); os.IsNotExist(err) {
+		fmt.Printf("File not found at %s. Creating...", config.PwdFilePath())
+		os.Create(config.PwdFilePath())
+	}
+	fmt.Printf("File %s loaded!", config.PwdFilePath())
+
 	switch config.Mode() {
 	case "manual":
 		if config.UsrIsHost() {
