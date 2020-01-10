@@ -11,7 +11,7 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-const authErrSubstring = "ssh: handshake failed: ssh: unable to authenticate"
+const AUTH_ERR_SUBSTRING = "ssh: handshake failed: ssh: unable to authenticate"
 
 // SSHConn attempts to connect to the remote host using the passed values. The variable
 // host should be an IP, username a remote username, port the remote port (typically 22)
@@ -78,7 +78,7 @@ func SSHDictMT(ip, username, port string, pwds []string, verbose bool) (string, 
 				// it does not have anything to do with the password being wrong and we want to stop
 				// attempting passwords on this host. If it is an auth error, however, we simply move
 				// on to the next pwd in pwds
-				if !strings.Contains(err.Error(), authErrSubstring) {
+				if !strings.Contains(err.Error(), AUTH_ERR_SUBSTRING) {
 					errChan <- err
 				}
 				return
@@ -115,7 +115,7 @@ func SSHDictST(ip, username, port string, pwds []string, verbose bool) (string, 
 			// it does not have anything to do with the password being wrong and we want to stop
 			// attempting passwords on this host. If it is an auth error, however, we simply move
 			// on to the next pwd in pwds
-			if !strings.Contains(err.Error(), authErrSubstring) {
+			if !strings.Contains(err.Error(), AUTH_ERR_SUBSTRING) {
 				return "", fmt.Errorf("internal/sshconn: %s", err.Error())
 			}
 			continue

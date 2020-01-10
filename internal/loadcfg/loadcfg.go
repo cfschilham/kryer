@@ -2,8 +2,10 @@ package loadcfg
 
 import (
 	"bufio"
+	"context"
 	"errors"
 	"fmt"
+	"net"
 	"os"
 
 	"github.com/spf13/viper"
@@ -34,42 +36,42 @@ type Host struct {
 }
 
 // Verbose returns the value of verbose in a Config type.
-func (c *Config) Verbose() bool {
+func (c Config) Verbose() bool {
 	return c.verbose
 }
 
 // UsrIsHost returns the value of usrIsHost in a Config type.
-func (c *Config) UsrIsHost() bool {
+func (c Config) UsrIsHost() bool {
 	return c.usrIsHost
 }
 
 // MultiThreaded returns the value of multiThreaded in a Config type.
-func (c *Config) MultiThreaded() bool {
+func (c Config) MultiThreaded() bool {
 	return c.multiThreaded
 }
 
 // MaxThreads returns the value of maxThreads in a Config type.
-func (c *Config) MaxThreads() int {
+func (c Config) MaxThreads() int {
 	return c.maxThreads
 }
 
 // Mode returns the value of mode in a Config type.
-func (c *Config) Mode() string {
+func (c Config) Mode() string {
 	return c.mode
 }
 
 // Port returns the value of port in a Config type.
-func (c *Config) Port() string {
+func (c Config) Port() string {
 	return c.port
 }
 
 // DictPath returns the value of dictPath in a Config type.
-func (c *Config) DictPath() string {
+func (c Config) DictPath() string {
 	return c.dictPath
 }
 
 // HostlistPath returns the value of hostlistPath in a Config type.
-func (c *Config) HostlistPath() string {
+func (c Config) HostlistPath() string {
 	return c.hostlistPath
 }
 
@@ -79,13 +81,36 @@ func (d *Dict) Pwds() []string {
 }
 
 // IP returns the value of ip in a Host type.
-func (h *Host) IP() string {
+func (h Host) IP() string {
 	return h.ip
 }
 
 // Username returns the value of username in a Host type.
-func (h *Host) Username() string {
+func (h Host) Username() string {
 	return h.username
+}
+
+func (h Host) ResolveIP() (string, error) {
+	resolver := net.Resolver{
+		PreferGo: false,
+	}
+
+	unparsedIPS, err := resolver.LookupHost(context.Background(), h.ip)
+	var ips []net.IP
+	for _, unparsedIP := range unparsedIPS {
+		ips = append(ips, net.ParseIP(unparsedIP))
+	}
+
+	if err != nil {
+		return "", err
+	}
+
+	for _, ip := range ips {
+		if ip.To4() != nil {
+			return ip.To4().String(), nil
+		}
+	}
+	return "", fmt.Errorf("internal/loadcfg: failed to resolve host: '%s'", h.ip)
 }
 
 // LoadConfig returns a config type based on the values in cfg/config.yml.

