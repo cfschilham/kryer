@@ -231,16 +231,18 @@ func LoadHostlist(path string, usrIsHost bool) ([]Host, error) {
 	return hSlc, nil
 }
 
-// ExportToFile exports all found username/password combinations to a .txt file
-func ExportToFile(filePath, host, pwd string) error {
-	f, err := os.OpenFile(filePath, os.O_RDWR, 0644)
+// ExportToFile exports a string to a file
+func ExportToFile(s, path string) error {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		os.Create(path)
+	}
+	f, err := os.OpenFile(path, os.O_RDWR, 0644)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
-	str := fmt.Sprintf("Host: '%s' | Password: '%s'\n", host, pwd)
-	if _, err := f.WriteString(str); err != nil {
+	if _, err := f.WriteString(s); err != nil {
 		return err
 	}
 	return nil
