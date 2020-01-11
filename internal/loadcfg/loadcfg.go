@@ -21,7 +21,7 @@ type Config struct {
 	port,
 	dictPath,
 	hostlistPath,
-	pwdFilePath string
+	outputPath string
 }
 
 // Dict is used to load a dictionary of passwords from the configured dictionary file, Dict.pwds
@@ -76,9 +76,9 @@ func (c Config) HostlistPath() string {
 	return c.hostlistPath
 }
 
-// PwdFilePath returns the value of pwdFilePath in a Config type.
-func (c Config) PwdFilePath() string {
-	return c.pwdFilePath
+// OutputPath returns the value of outputPath in a Config type.
+func (c Config) OutputPath() string {
+	return c.outputPath
 }
 
 // Pwds returns the value of pwds in a Dict type.
@@ -96,7 +96,7 @@ func (h Host) Username() string {
 	return h.username
 }
 
-// ResolveIP resolves the ip?
+// ResolveIP tries to resolve the ip with cgo
 func (h Host) ResolveIP() (string, error) {
 	resolver := net.Resolver{
 		PreferGo: false,
