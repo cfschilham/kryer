@@ -15,8 +15,7 @@ import (
 type Config struct {
 	verbose,
 	usrIsHost,
-	multiThreaded,
-	exportPwdToFile bool
+	multiThreaded bool
 	maxThreads int
 	mode,
 	port,
@@ -50,11 +49,6 @@ func (c Config) UsrIsHost() bool {
 // MultiThreaded returns the value of multiThreaded in a Config type.
 func (c Config) MultiThreaded() bool {
 	return c.multiThreaded
-}
-
-// ExportPwdToFile returns the value of exportPwdToFile in a Config type
-func (c Config) ExportPwdToFile() bool {
-	return c.exportPwdToFile
 }
 
 // MaxThreads returns the value of maxThreads in a Config type.
@@ -135,16 +129,15 @@ func LoadConfig() (*Config, error) {
 	}
 
 	c := &Config{
-		verbose:         viper.GetBool("verbose"),
-		usrIsHost:       viper.GetBool("user_is_host"),
-		multiThreaded:   viper.GetBool("multi_threaded"),
-		exportPwdToFile: viper.GetBool("export_pwd_to_file"),
-		maxThreads:      viper.GetInt("max_threads"),
-		mode:            viper.GetString("mode"),
-		port:            viper.GetString("port"),
-		dictPath:        viper.GetString("dict_path"),
-		hostlistPath:    viper.GetString("hostlist_path"),
-		pwdFilePath:     viper.GetString("pwd_file_path"),
+		verbose:       viper.GetBool("verbose"),
+		usrIsHost:     viper.GetBool("user_is_host"),
+		multiThreaded: viper.GetBool("multi_threaded"),
+		maxThreads:    viper.GetInt("max_threads"),
+		mode:          viper.GetString("mode"),
+		port:          viper.GetString("port"),
+		dictPath:      viper.GetString("dict_path"),
+		hostlistPath:  viper.GetString("hostlist_path"),
+		pwdFilePath:   viper.GetString("pwd_file_path"),
 	}
 	return c, nil
 }
@@ -238,16 +231,18 @@ func LoadHostlist(path string, usrIsHost bool) ([]Host, error) {
 	return hSlc, nil
 }
 
-// ExportToFile exports all found username/password combinations to a .txt file
-func ExportToFile(filePath, host, pwd string) error {
-	f, err := os.OpenFile(filePath, os.O_RDWR, 0644)
+// ExportToFile exports a string to a file
+func ExportToFile(s, path string) error {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		os.Create(path)
+	}
+	f, err := os.OpenFile(path, os.O_RDWR, 0644)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
-	str := fmt.Sprintf("Host: '%s' | Password: '%s'\n", host, pwd)
-	if _, err := f.WriteString(str); err != nil {
+	if _, err := f.WriteString(s); err != nil {
 		return err
 	}
 	return nil
