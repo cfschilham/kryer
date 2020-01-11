@@ -26,12 +26,17 @@ func main() {
 		log.Fatalln(err.Error())
 	}
 
-	fmt.Printf("Checking if password file is present at %s...\n", config.PwdFilePath())
-	if _, err := os.Stat(config.PwdFilePath()); os.IsNotExist(err) {
-		fmt.Printf("File not found at %s. Creating...", config.PwdFilePath())
+	isPwdFilePath := true
+	if config.PwdFilePath() == "" {
+		isPwdFilePath = false
+	}
+	if isPwdFilePath {
+		fmt.Printf("Loading %s...\n", config.PwdFilePath())
+	}
+	if _, err := os.Stat(config.PwdFilePath()); os.IsNotExist(err) && isPwdFilePath {
+		fmt.Printf("File not found at %s. Creating...\n", config.PwdFilePath())
 		os.Create(config.PwdFilePath())
 	}
-	fmt.Printf("File %s loaded!", config.PwdFilePath())
 
 	switch config.Mode() {
 	case "manual":
@@ -78,7 +83,7 @@ func main() {
 			}
 			fmt.Printf("Password of '%s' found: %s\n", host.Username()+"@"+host.IP(), pwd)
 
-			if config.ExportPwdToFile() {
+			if isPwdFilePath {
 				loadcfg.ExportToFile(config.PwdFilePath(), host.Username()+"@"+host.IP(), pwd)
 			}
 		}
@@ -118,7 +123,7 @@ func main() {
 			fmt.Println("The following combinations were found: ")
 			for host, pwd := range foundCredentials {
 				fmt.Printf("Host: '%s' | Password: '%s'\n", host, pwd)
-				if config.ExportPwdToFile() {
+				if isPwdFilePath {
 					loadcfg.ExportToFile(config.PwdFilePath(), host, pwd)
 				}
 			}

@@ -1,11 +1,10 @@
 verbose: false
 user_is_host: false # when enabled, all host input will automatically be interpreted as exinput@exinput.local (example with input 'exinput') whether it is from a hostlist or manual entry
 multi_threaded: true # when enabled, each password from the dict_path file will spawn a new thread
-export_pwd_to_file: true #sets whether or not you want to export all found user/password combinations to a .txt file. NOTE: .txt file MUST be present already, or an error will be returned
 max_threads: 10 # maximum amount of concurrent connections in multi threaded mode
 mode: "manual" # manual/hostlist
 port: "22" # ssh port to connect to, conventionally 22
 dict_path: "cfg/dict.txt"
 hostlist_path: "cfg/hostlist.txt" 
-pwd_file_path: "pwds.txt" #sets the password file directory. for this export_pwd_to_file needs to be true
+pwd_file_path: "pwds.txt" #sets the password file directory. for this export_pwd_to_file needs to be true. If left empty, no pwd file will be used or created.
 
