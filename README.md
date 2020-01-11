@@ -26,4 +26,3 @@ Provided you have Go installed and configured properly, you can run `$ go build`
 |port|"22"|The SSH port to connect to, almost unexceptionally is 22.|
 |dict_path|"cfg/dict.txt"|The path of the dictionary file.|
 |hostlist_path|"cfg/hostlist.txt"|The path of the hostlist file. Ignored if mode is "manual". With usr_is_host this file should only contain usernames. Otherwise it should contain entries in the form: username@ip each followed by a newline.| 
-|output_path|"output.txt"|The path of the output file. This is where all user/password combinations are exported to. If no filename is specified, nothing will be outputted.|
