@@ -6,5 +6,4 @@ mode: "manual" # manual/hostlist
 port: "22" # ssh port to connect to, conventionally 22
 dict_path: "cfg/dict.txt"
 hostlist_path: "cfg/hostlist.txt" 
-pwd_file_path: "pwds.txt" #sets the password file directory. for this export_pwd_to_file needs to be true. If left empty, no pwd file will be used or created.
-
+output_path: "output.txt" #sets the output file path, which is where all output is exported to; if left empty, nothing will be exported
