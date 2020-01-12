@@ -27,6 +27,9 @@ darwin:
 
 clean:
 	$(GO) clean
+	rm -r autossh-$(VERSION)-windows-amd64/$(BUILD_TARGET)
+	rm -r autossh-$(VERSION)-linux-amd64/$(BUILD_TARGET)
+	rm -r autossh-$(VERSION)-darwin-amd64/$(BUILD_TARGET)
 
 test:
 	$(GO) test ./...
