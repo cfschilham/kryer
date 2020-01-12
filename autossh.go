@@ -11,10 +11,12 @@ import (
 	"github.com/cfschilham/autossh/internal/sshatk"
 )
 
-func main() {
-	fmt.Println("AutoSSH v1.1.3 - https://github.com/cfschilham/autossh")
+const VERSION = "v1.1.4"
 
-	fmt.Println("Loading cfg/config.yml...")
+func main() {
+	fmt.Printf("AutoSSH %s - https://github.com/cfschilham/autossh\n", VERSION)
+
+	fmt.Printf("Loading cfg/config.yml...\n")
 	config, err := loadcfg.LoadConfig()
 	if err != nil {
 		log.Fatalln(err.Error())
