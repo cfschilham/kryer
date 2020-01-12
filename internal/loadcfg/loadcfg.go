@@ -20,7 +20,8 @@ type Config struct {
 	mode,
 	port,
 	dictPath,
-	hostlistPath string
+	hostlistPath,
+	outputPath string
 }
 
 // Dict is used to load a dictionary of passwords from the configured dictionary file, Dict.pwds
@@ -75,6 +76,11 @@ func (c Config) HostlistPath() string {
 	return c.hostlistPath
 }
 
+// OutputPath returns the value of outputPath in a Config type.
+func (c Config) OutputPath() string {
+	return c.outputPath
+}
+
 // Pwds returns the value of pwds in a Dict type.
 func (d *Dict) Pwds() []string {
 	return d.pwds
@@ -90,6 +96,7 @@ func (h Host) Username() string {
 	return h.username
 }
 
+// ResolveIP tries to resolve the ip with cgo
 func (h Host) ResolveIP() (string, error) {
 	resolver := net.Resolver{
 		PreferGo: false,
@@ -130,6 +137,7 @@ func LoadConfig() (*Config, error) {
 		port:          viper.GetString("port"),
 		dictPath:      viper.GetString("dict_path"),
 		hostlistPath:  viper.GetString("hostlist_path"),
+		pwdFilePath:   viper.GetString("pwd_file_path"),
 	}
 	return c, nil
 }
@@ -190,7 +198,7 @@ func StrToHost(str string, usrIsHost bool) (Host, error) {
 	return Host{}, fmt.Errorf("internal/loadcfg: invalid hostname '%s'", str)
 }
 
-// strSlcToHosts takes a slice of strings and returns a slice of hosts. These hostscan be used to append
+// SlcToHosts takes a slice of strings and returns a slice of hosts. These hostscan be used to append
 // to a Hostlist type. Strings should be passed in the form 'username@host' unless usrIsHost is true. With
 // usrIsHost enabled, for example, an input of 'user1' means an output of a Host struct with username:
 // 'user1', ip: 'user1.local'.
@@ -221,4 +229,21 @@ func LoadHostlist(path string, usrIsHost bool) ([]Host, error) {
 	}
 
 	return hSlc, nil
+}
+
+// ExportToFile exports a string to a file. One will be created if necessary.
+func ExportToFile(s, path string) error {
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		os.Create(path)
+	}
+	f, err := os.OpenFile(path, os.O_RDWR, 0644)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+
+	if _, err := f.WriteString(s); err != nil {
+		return err
+	}
+	return nil
 }

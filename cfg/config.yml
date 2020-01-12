@@ -6,3 +6,4 @@ mode: "manual" # manual/hostlist
 port: "22" # ssh port to connect to, conventionally 22
 dict_path: "cfg/dict.txt"
 hostlist_path: "cfg/hostlist.txt" 
+output_path: "output.txt" # ignored if set to an empty string
