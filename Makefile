@@ -2,7 +2,7 @@ GO := go
 BUILD_TARGET := autossh
 VERSION := v1.1.4
 
-.PHONY: build clean test deps
+.PHONY: build windows linux darwin clean test deps
 
 build:
 	$(GO) build -v -o $(BUILD_TARGET)
