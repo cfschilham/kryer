@@ -74,7 +74,7 @@ func main() {
 			fmt.Printf("Password of '%s' found: %s\n", host.Username()+"@"+host.IP(), pwd)
 
 			if config.OutputPath() != "" {
-				s := fmt.Sprintf("%s@%s:%s", host.Username(), host.IP(), pwd)
+				s := fmt.Sprintf("%s@%s:%s\n", host.Username(), host.IP(), pwd)
 				if err := loadcfg.ExportToFile(s, config.OutputPath()); err != nil {
 					fmt.Fprintln(os.Stderr, err.Error())
 				}

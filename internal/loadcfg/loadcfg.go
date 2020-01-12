@@ -137,7 +137,7 @@ func LoadConfig() (*Config, error) {
 		port:          viper.GetString("port"),
 		dictPath:      viper.GetString("dict_path"),
 		hostlistPath:  viper.GetString("hostlist_path"),
-		pwdFilePath:   viper.GetString("pwd_file_path"),
+		outputPath:    viper.GetString("output_path"),
 	}
 	return c, nil
 }
@@ -233,16 +233,18 @@ func LoadHostlist(path string, usrIsHost bool) ([]Host, error) {
 
 // ExportToFile exports a string to a file. One will be created if necessary.
 func ExportToFile(s, path string) error {
-	if _, err := os.Stat(path); os.IsNotExist(err) {
+	info, err := os.Stat(path)
+	if os.IsNotExist(err) {
 		os.Create(path)
 	}
+
 	f, err := os.OpenFile(path, os.O_RDWR, 0644)
 	if err != nil {
 		return err
 	}
 	defer f.Close()
 
-	if _, err := f.WriteString(s); err != nil {
+	if _, err := f.WriteAt([]byte(s), info.Size()); err != nil {
 		return err
 	}
 	return nil

@@ -38,10 +38,9 @@ func NewPool(size int) (*Pool, error) {
 }
 
 // NewTask returns a new task.
-func NewTask(fn func(params []interface{}), params []interface{}) *Task {
+func NewTask(fn func(params []interface{})) *Task {
 	return &Task{
-		fn:     fn,
-		params: params,
+		fn: fn,
 	}
 }
 
@@ -103,7 +102,7 @@ func (p *Pool) assignTaskFromQueue() {
 
 	t := p.queue[0]
 	for _, w := range p.workers {
-		if err := w.Task(t); err == nil {
+		if err := w.SetTask(t); err == nil {
 			if len(p.queue) > 1 {
 				p.queue = p.queue[1:]
 			} else {
@@ -115,11 +114,15 @@ func (p *Pool) assignTaskFromQueue() {
 	}
 }
 
+func (t *Task) SetParams(params []interface{}) {
+	t.params = params
+}
+
 func (w *Worker) Dismiss() {
 	w.dismiss <- true
 }
 
-func (w *Worker) Task(t *Task) error {
+func (w *Worker) SetTask(t *Task) error {
 	select {
 	case w.task <- t:
 		w.TaskWG.Add(1)
