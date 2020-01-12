@@ -73,7 +73,7 @@ func main() {
 
 			if config.OutputPath() != "" {
 				s := fmt.Sprintf("%s@%s:%s", host.Username(), host.IP(), pwd)
-				if err != nil {
+				if err := loadcfg.ExportToFile(s, config.OutputPath()); err != nil {
 					fmt.Fprintln(os.Stderr, err.Error())
 				}
 			}
