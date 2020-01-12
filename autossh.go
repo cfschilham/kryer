@@ -115,7 +115,7 @@ func main() {
 			foundCredentials[host.IP()+"@"+host.Username()] = pwd
 		}
 
-		// Print all found combinations and export them to a file if that is selected in config.yml
+		// Print all found combinations, export them to a file if configured
 		if len(foundCredentials) > 0 {
 			fmt.Println("The following combinations were found: ")
 			for host, pwd := range foundCredentials {
