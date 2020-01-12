@@ -25,4 +25,5 @@ Provided you have Go installed and configured properly, you can run `$ go build`
 |mode|"manual"|Can be set to either "manual" or "hostlist". In manual mode you enter hosts manually one-by-one. In hostlist mode they are read from a hostlist file (separated by newlines).|
 |port|"22"|The SSH port to connect to, almost unexceptionally is 22.|
 |dict_path|"cfg/dict.txt"|The path of the dictionary file.|
-|hostlist_path|"cfg/hostlist.txt"|The path of the hostlist file. Ignored if mode is "manual". With usr_is_host this file should only contain usernames. Otherwise it should contain entries in the form: username@ip each followed by a newline.| 
+|hostlist_path|"cfg/hostlist.txt"|The path of the hostlist file. Ignored if mode is "manual". With usr_is_host this file should only contain usernames. Otherwise it should contain entries in the form: username@ip each followed by a newline.|
+|output_path|"output.txt"|The path of the output file. Found credentials will be stored here. Set to "" to turn off.|
