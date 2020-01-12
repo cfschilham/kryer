@@ -231,7 +231,7 @@ func LoadHostlist(path string, usrIsHost bool) ([]Host, error) {
 	return hSlc, nil
 }
 
-// ExportToFile exports a string to a file
+// ExportToFile exports a string to a file. One will be created if necessary.
 func ExportToFile(s, path string) error {
 	if _, err := os.Stat(path); os.IsNotExist(err) {
 		os.Create(path)
