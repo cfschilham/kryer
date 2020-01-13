@@ -10,7 +10,7 @@ Download the latest release from the [releases tab](https://github.com/cfschilha
 **Build from Source**  
 Sometimes, the pre-compiled binaries won't work with CGO, meaning you are unable to resolve .local hostnames. This can typically be fixed by building from source.
 
-Provided you have Go installed and configured properly, you can run `$ go build` inside the repository, which will compile everything into a single file. You can then delete the internal directory and the autossh.go file.
+Provided you have Go installed and configured properly, you can run `$ make release` inside the repository directory, which will create a new folder with the built files. This folder does not depend on the source code to be present.
   
 # Configuration  
   All configuration can be done inside of cfg/config.yml. 
@@ -18,7 +18,6 @@ Provided you have Go installed and configured properly, you can run `$ go build`
   
 |Option|Default|Description|
 |--|--|--|
-|verbose|false|More verbose output|
 |usr_is_host|false|Hostnames/IP's are redundant when this is true, instead they will be derived from the username as: username + .local|
 |multi_threaded|true|Enables the use of multiple threads per host. Will spawn goroutines for every password but is capped by max_threads.|
 |max_threads|10|Maximum amount of goroutines per host when multi_threaded is true. For example: if max_threads is 10 and the dictionary length is 25, 10 routines will be spawned, after completion another 10 will be spawned and finally 5 more will be spawned to complete the dictionary.|

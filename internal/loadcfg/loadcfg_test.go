@@ -68,12 +68,12 @@ func TestStrToHost(t *testing.T) {
 		usrIsHost bool
 		host      Host
 	}{
-		{str: "user@host.local", usrIsHost: false, host: Host{username: "user", ip: "host.local"}},
-		{str: "user", usrIsHost: true, host: Host{username: "user", ip: "user.local"}},
-		{str: "user123@192.168.0.0", usrIsHost: false, host: Host{username: "user123", ip: "192.168.0.0"}},
-		{str: "username", usrIsHost: true, host: Host{username: "username", ip: "username.local"}},
-		{str: "root@localhost", usrIsHost: false, host: Host{username: "root", ip: "localhost"}},
-		{str: "username321", usrIsHost: true, host: Host{username: "username321", ip: "username321.local"}},
+		{str: "user@host.local", usrIsHost: false, host: Host{username: "user", addr: "host.local"}},
+		{str: "user", usrIsHost: true, host: Host{username: "user", addr: "user.local"}},
+		{str: "user123@192.168.0.0", usrIsHost: false, host: Host{username: "user123", addr: "192.168.0.0"}},
+		{str: "username", usrIsHost: true, host: Host{username: "username", addr: "username.local"}},
+		{str: "root@localhost", usrIsHost: false, host: Host{username: "root", addr: "localhost"}},
+		{str: "username321", usrIsHost: true, host: Host{username: "username321", addr: "username321.local"}},
 	}
 
 	for _, entry := range tables {
@@ -98,18 +98,18 @@ func TestSlcToHosts(t *testing.T) {
 			slc:       []string{"user", "user2", "user3"},
 			usrIsHost: true,
 			hosts: []Host{
-				Host{username: "user", ip: "user.local"},
-				Host{username: "user2", ip: "user2.local"},
-				Host{username: "user3", ip: "user3.local"},
+				Host{username: "user", addr: "user.local"},
+				Host{username: "user2", addr: "user2.local"},
+				Host{username: "user3", addr: "user3.local"},
 			},
 		},
 		{
 			slc:       []string{"user@192.168.0.0", "user2@192.168.0.0", "user3@192.168.0.0"},
 			usrIsHost: false,
 			hosts: []Host{
-				Host{username: "user", ip: "192.168.0.0"},
-				Host{username: "user2", ip: "192.168.0.0"},
-				Host{username: "user3", ip: "192.168.0.0"},
+				Host{username: "user", addr: "192.168.0.0"},
+				Host{username: "user2", addr: "192.168.0.0"},
+				Host{username: "user3", addr: "192.168.0.0"},
 			},
 		},
 	}

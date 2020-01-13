@@ -1,5 +1,5 @@
 GO := go
-VERSION := v1.1.4
+VERSION := v1.2.0
 
 .PHONY: build windows linux darwin clean test deps
 

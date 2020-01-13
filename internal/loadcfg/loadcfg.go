@@ -13,10 +13,9 @@ import (
 
 // Config is used to load config values from cfg/config.yml
 type Config struct {
-	verbose,
 	usrIsHost,
 	multiThreaded bool
-	maxThreads int
+	goroutines int
 	mode,
 	port,
 	dictPath,
@@ -33,12 +32,7 @@ type Dict struct {
 // Host is used to represent a combination of a username and an ip to connect to via SSH.
 type Host struct {
 	username,
-	ip string
-}
-
-// Verbose returns the value of verbose in a Config type.
-func (c Config) Verbose() bool {
-	return c.verbose
+	addr string
 }
 
 // UsrIsHost returns the value of usrIsHost in a Config type.
@@ -51,9 +45,9 @@ func (c Config) MultiThreaded() bool {
 	return c.multiThreaded
 }
 
-// MaxThreads returns the value of maxThreads in a Config type.
-func (c Config) MaxThreads() int {
-	return c.maxThreads
+// Goroutines returns the value of goroutines in a Config type.
+func (c Config) Goroutines() int {
+	return c.goroutines
 }
 
 // Mode returns the value of mode in a Config type.
@@ -86,9 +80,9 @@ func (d *Dict) Pwds() []string {
 	return d.pwds
 }
 
-// IP returns the value of ip in a Host type.
-func (h Host) IP() string {
-	return h.ip
+// Addr returns the value of addr in a Host type.
+func (h Host) Addr() string {
+	return h.addr
 }
 
 // Username returns the value of username in a Host type.
@@ -96,16 +90,16 @@ func (h Host) Username() string {
 	return h.username
 }
 
-// ResolveIP tries to resolve the ip with cgo
-func (h Host) ResolveIP() (string, error) {
+// ResolveAddr tries to resolve the address using the cgo resolver.
+func (h Host) ResolveAddr() (string, error) {
 	resolver := net.Resolver{
 		PreferGo: false,
 	}
 
-	unparsedIPS, err := resolver.LookupHost(context.Background(), h.ip)
+	addrs, err := resolver.LookupHost(context.Background(), h.addr)
 	var ips []net.IP
-	for _, unparsedIP := range unparsedIPS {
-		ips = append(ips, net.ParseIP(unparsedIP))
+	for _, addr := range addrs {
+		ips = append(ips, net.ParseIP(addr))
 	}
 
 	if err != nil {
@@ -117,7 +111,7 @@ func (h Host) ResolveIP() (string, error) {
 			return ip.To4().String(), nil
 		}
 	}
-	return "", fmt.Errorf("internal/loadcfg: failed to resolve host: '%s'", h.ip)
+	return "", fmt.Errorf("internal/loadcfg: failed to resolve host: '%s'", h.addr)
 }
 
 // LoadConfig returns a config type based on the values in cfg/config.yml.
@@ -129,10 +123,9 @@ func LoadConfig() (*Config, error) {
 	}
 
 	c := &Config{
-		verbose:       viper.GetBool("verbose"),
 		usrIsHost:     viper.GetBool("user_is_host"),
 		multiThreaded: viper.GetBool("multi_threaded"),
-		maxThreads:    viper.GetInt("max_threads"),
+		goroutines:    viper.GetInt("goroutines"),
 		mode:          viper.GetString("mode"),
 		port:          viper.GetString("port"),
 		dictPath:      viper.GetString("dict_path"),
@@ -175,7 +168,7 @@ func LoadDict(path string) (*Dict, error) {
 
 // StrToHost takes a string and returns a host. Strings should be passed in the form 'username@host'
 // unless usrIsHost is true. With usrIsHost enabled, for example, an input of 'user1' means an output
-// of a Host struct with username: 'user1', ip: 'user1.local'.
+// of a Host struct with username: 'user1', addr: 'user1.local'.
 func StrToHost(str string, usrIsHost bool) (Host, error) {
 	if str == "" {
 		return Host{}, errors.New("internal/loadcfg: empty string passed")
@@ -184,14 +177,14 @@ func StrToHost(str string, usrIsHost bool) (Host, error) {
 	if usrIsHost {
 		return Host{
 			username: str,
-			ip:       str + ".local",
+			addr:     str + ".local",
 		}, nil
 	}
 	for i, char := range str {
 		if string(char) == "@" && i != len(str)-1 {
 			return Host{
 				username: str[0:i],
-				ip:       str[i+1:],
+				addr:     str[i+1:],
 			}, nil
 		}
 	}
@@ -232,8 +225,8 @@ func LoadHostlist(path string, usrIsHost bool) ([]Host, error) {
 }
 
 // ExportToFile exports a string to a file. One will be created if necessary.
-func ExportToFile(s, path string) error {
-	info, err := os.Stat(path)
+func ExportToFile(str, path string) error {
+	_, err := os.Stat(path)
 	if os.IsNotExist(err) {
 		os.Create(path)
 	}
@@ -244,7 +237,12 @@ func ExportToFile(s, path string) error {
 	}
 	defer f.Close()
 
-	if _, err := f.WriteAt([]byte(s), info.Size()); err != nil {
+	info, err := f.Stat()
+	if err != nil {
+		return err
+	}
+
+	if _, err := f.WriteAt([]byte(str), info.Size()); err != nil {
 		return err
 	}
 	return nil

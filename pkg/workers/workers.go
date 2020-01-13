@@ -5,23 +5,34 @@ import (
 	"sync"
 )
 
+// Pool represents a pool of multiple managed workers
 type Pool struct {
 	size    int
-	workers []*Worker
-	queue   []*Task
+	workers []*worker
+
+	// Workers will transmit a pointer to themselves to this channel
+	// when they are about to listen for incoming tasks on their task
+	// channel.
+	dormantPool chan *worker
+	queue       []Task
+
+	// Finished when the queue reached 0 tasks.
 	QueueWG sync.WaitGroup
 	dismiss chan bool
 }
 
+// Task represents the combination of a function and parameters to
+// be executed by a worker.
 type Task struct {
 	fn     func(params []interface{})
 	params []interface{}
 }
 
-type Worker struct {
-	task    chan *Task
-	TaskWG  sync.WaitGroup
-	dismiss chan bool
+type worker struct {
+	task        chan Task
+	taskWG      sync.WaitGroup
+	dormantPool chan *worker
+	dismiss     chan bool
 }
 
 // NewPool returns a new worker pool.
@@ -31,9 +42,10 @@ func NewPool(size int) (*Pool, error) {
 	}
 
 	return &Pool{
-		size:    size,
-		dismiss: make(chan bool),
-		QueueWG: sync.WaitGroup{},
+		size:        size,
+		dormantPool: make(chan *worker, size),
+		dismiss:     make(chan bool, 1),
+		QueueWG:     sync.WaitGroup{},
 	}, nil
 }
 
@@ -45,25 +57,29 @@ func NewTask(fn func(params []interface{})) *Task {
 }
 
 // NewWorker returns a new worker.
-func NewWorker() *Worker {
-	return &Worker{
-		task:    make(chan *Task),
-		TaskWG:  sync.WaitGroup{},
-		dismiss: make(chan bool),
+func newWorker() *worker {
+	return &worker{
+		task:    make(chan Task),
+		taskWG:  sync.WaitGroup{},
+		dismiss: make(chan bool, 1),
 	}
 }
 
-func (p *Pool) QueueTask(t *Task) {
+// QueueTask adds a task to the pools queue.
+func (p *Pool) QueueTask(t Task) {
 	p.QueueWG.Add(1)
 	p.queue = append(p.queue, t)
 }
 
+// Start starts a pools goroutine as well as the goroutines of all its
+// workers.
 func (p *Pool) Start() error {
 	for i := 0; i < p.size; i++ {
-		p.workers = append(p.workers, NewWorker())
+		p.workers = append(p.workers, newWorker())
 	}
 
 	for _, w := range p.workers {
+		w.dormantPool = p.dormantPool
 		w.Start()
 	}
 	go func(p *Pool) {
@@ -71,19 +87,29 @@ func (p *Pool) Start() error {
 			select {
 			case <-p.dismiss:
 				break
-			default:
-				p.assignTaskFromQueue()
+			case w := <-p.dormantPool:
+				if len(p.queue) > 0 {
+					w.setTask(p.queue[0])
+
+					if len(p.queue) > 1 {
+						p.queue = p.queue[1:]
+					} else {
+						p.queue = nil
+					}
+					p.QueueWG.Done()
+				}
 			}
 		}
 	}(p)
 	return nil
 }
 
+// Dismiss dismisses the pool and all of its workers.
 func (p *Pool) Dismiss() {
+	p.dismiss <- true
 	for _, w := range p.workers {
 		w.Dismiss()
 	}
-	p.dismiss <- true
 }
 
 // Wait waits for the pools queue to empty and then for all workers to finish. Do
@@ -91,56 +117,42 @@ func (p *Pool) Dismiss() {
 func (p *Pool) Wait() {
 	p.QueueWG.Wait()
 	for _, w := range p.workers {
-		w.TaskWG.Wait()
+		w.taskWG.Wait()
 	}
 }
 
-func (p *Pool) assignTaskFromQueue() {
-	if len(p.queue) <= 0 {
-		return
-	}
-
-	t := p.queue[0]
-	for _, w := range p.workers {
-		if err := w.SetTask(t); err == nil {
-			if len(p.queue) > 1 {
-				p.queue = p.queue[1:]
-			} else {
-				p.queue = nil
-			}
-			p.QueueWG.Done()
-			return
-		}
-	}
-}
-
+// SetParams sets the parameters which will be passed to the tasks function.
 func (t *Task) SetParams(params []interface{}) {
 	t.params = params
 }
 
-func (w *Worker) Dismiss() {
+// Dismiss dismisses a worker, ending its goroutine.
+func (w *worker) Dismiss() {
 	w.dismiss <- true
+
+	// Safeguard to prevent the pool from sending to a dismissed worker's task channel.
+	w.task = nil
 }
 
-func (w *Worker) SetTask(t *Task) error {
-	select {
-	case w.task <- t:
-		w.TaskWG.Add(1)
-		return nil
-	default:
-		return errors.New("workers: worker is busy")
-	}
+// SetTask attempts to give a worker a new task. If the worker is busy an error
+// will be returned, otherwise nil will be returned.
+func (w *worker) setTask(t Task) {
+	w.taskWG.Add(1)
+	w.task <- t
 }
 
-func (w *Worker) Start() {
-	go func(w *Worker) {
+// Start starts the goroutine of the worker. To stop the goroutine, call the
+// workers dismiss method.
+func (w *worker) Start() {
+	go func(w *worker) {
 		for {
+			w.dormantPool <- w
 			select {
 			case <-w.dismiss:
 				break
 			case task := <-w.task:
 				task.fn(task.params)
-				w.TaskWG.Done()
+				w.taskWG.Done()
 			}
 		}
 	}(w)

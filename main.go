@@ -11,7 +11,7 @@ import (
 	"github.com/cfschilham/autossh/internal/sshatk"
 )
 
-const VERSION = "v1.1.4"
+const VERSION = "v1.2.0"
 
 func main() {
 	fmt.Printf("AutoSSH %s - https://github.com/cfschilham/autossh\n", VERSION)
@@ -31,7 +31,7 @@ func main() {
 	switch config.Mode() {
 	case "manual":
 		if config.UsrIsHost() {
-			fmt.Println("You currently have 'user_is_host' enabled in cfg/config.yml. This means an input of, for example, 'pcname' will be inferred as 'pcname@pcname.local'")
+			fmt.Println("You currently have user_is_host enabled in cfg/config.yml. This means an input of, for example, 'pcname' will be inferred as 'pcname@pcname.local'")
 		} else {
 			fmt.Println("Example input: 'john@johns-pc.local', 'peter@192.168.1.2'")
 		}
@@ -59,23 +59,29 @@ func main() {
 
 			// The IP is resolved first so that it doesn't have to be resolved again for every single password in the
 			// dictionary
-			ip, err := host.ResolveIP()
+			ip, err := host.ResolveAddr()
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err.Error())
 				continue
 			}
 
-			fmt.Printf("Attempting to connect to '%s@%s'...\n", host.Username(), host.IP())
-			pwd, err := sshatk.SSHDict(ip, host.Username(), config.Port(), dict.Pwds(), config)
+			fmt.Printf("Attempting to connect to %s@%s...\n", host.Username(), host.Addr())
+
+			var pwd string
+			if config.MultiThreaded() {
+				pwd, err = sshatk.SSHDictMT(ip, config.Port(), host.Username(), dict.Pwds(), config.Goroutines())
+			} else {
+				pwd, err = sshatk.SSHDictST(ip, config.Port(), host.Username(), dict.Pwds())
+			}
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err.Error())
 				continue
 			}
-			fmt.Printf("Password of '%s' found: %s\n", host.Username()+"@"+host.IP(), pwd)
 
+			fmt.Printf("Password of %s@%s found: '%s'\n", host.Username(), host.Addr(), pwd)
 			if config.OutputPath() != "" {
-				s := fmt.Sprintf("%s@%s:%s\n", host.Username(), host.IP(), pwd)
-				if err := loadcfg.ExportToFile(s, config.OutputPath()); err != nil {
+				credentials := fmt.Sprintf("%s@%s:%s\n", host.Username(), host.Addr(), pwd)
+				if err := loadcfg.ExportToFile(credentials, config.OutputPath()); err != nil {
 					fmt.Fprintln(os.Stderr, err.Error())
 				}
 			}
@@ -92,29 +98,35 @@ func main() {
 		var foundCredentials = map[string]string{}
 		for i, host := range hosts {
 			fmt.Printf("%d%% done\n", int(math.Round(float64(i)/float64(len(hosts))*100)))
-			fmt.Printf("Attempting to connect to '%s@%s'...\n", host.Username(), host.IP())
+			fmt.Printf("Attempting to connect to '%s@%s'...\n", host.Username(), host.Addr())
 
 			// The IP is resolved first so that it doesn't have to be resolved again for every single password in the
 			// dictionary
-			ip, err := host.ResolveIP()
+			ip, err := host.ResolveAddr()
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err.Error())
 				continue
 			}
 
-			pwd, err := sshatk.SSHDict(ip, host.Username(), config.Port(), dict.Pwds(), config)
+			var pwd string
+			if config.MultiThreaded() {
+				pwd, err = sshatk.SSHDictMT(ip, config.Port(), host.Username(), dict.Pwds(), config.Goroutines())
+			} else {
+				pwd, err = sshatk.SSHDictST(ip, config.Port(), host.Username(), dict.Pwds())
+			}
 			if err != nil {
 				fmt.Fprintln(os.Stderr, err.Error())
 				continue
 			}
-			fmt.Printf("Password of '%s' found: '%s'\n", host.Username()+"@"+host.IP(), pwd)
+
+			fmt.Printf("Password of %s@%s found: '%s'\n", host.Username(), host.Addr(), pwd)
 			if config.OutputPath() != "" {
-				s := fmt.Sprintf("%s@%s:%s", host.Username(), host.IP(), pwd)
-				if err := loadcfg.ExportToFile(s, config.OutputPath()); err != nil {
+				credentials := fmt.Sprintf("%s@%s:%s\n", host.Username(), host.Addr(), pwd)
+				if err := loadcfg.ExportToFile(credentials, config.OutputPath()); err != nil {
 					fmt.Fprintln(os.Stderr, err.Error())
 				}
 			}
-			foundCredentials[host.IP()+"@"+host.Username()] = pwd
+			foundCredentials[host.Username()+"@"+host.Addr()] = pwd
 		}
 
 		// Print all found combinations, export them to a file if configured
