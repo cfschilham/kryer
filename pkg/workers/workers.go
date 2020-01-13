@@ -3,6 +3,7 @@ package workers
 import (
 	"container/list"
 	"errors"
+	"runtime"
 )
 
 // Pool represents a pool of multiple managed workers
@@ -85,7 +86,7 @@ func newQueue() *queue {
 			if q.queue.Front() == nil {
 				select {
 				case <-q.dismissChan:
-					break
+					runtime.Goexit()
 				case t := <-q.enqueue:
 					q.queue.PushBack(t)
 				}
@@ -125,7 +126,7 @@ func (p *Pool) Start() error {
 		for {
 			select {
 			case <-p.dismissChan:
-				break
+				runtime.Goexit()
 			case t := <-p.queue.dequeue:
 				select {
 				case w := <-p.dormantPool:
@@ -142,11 +143,13 @@ func (p *Pool) Start() error {
 
 // Dismiss dismisses the pool and all of its workers.
 func (p *Pool) Dismiss() {
-	p.dormantPool = nil
 	p.dismissChan <- true
 	p.queue.dismiss()
 	for _, w := range p.workers {
 		w.dismiss()
+		// Buffer the task channel to ensure the pool's main goroutine doesn't
+		// get stuck on sending to a dismissed workers channel.
+		w.task = make(chan Task, 1)
 	}
 }
 
@@ -158,9 +161,6 @@ func (t *Task) SetParams(params []interface{}) {
 // dismiss dismisses a worker, ending its goroutine.
 func (w *worker) dismiss() {
 	w.dismissChan <- true
-
-	// Safeguard to prevent the pool from sending to a dismissed worker's task channel.
-	w.task = nil
 }
 
 // setTask gives a worker a new task.
@@ -176,7 +176,7 @@ func (w *worker) Start() {
 			w.dormantPool <- w
 			select {
 			case <-w.dismissChan:
-				break
+				runtime.Goexit()
 			case t := <-w.task:
 				if t.fn == nil {
 					panic("workers: received nil function")
