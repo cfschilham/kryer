@@ -19,8 +19,8 @@ Provided you have Go installed and configured properly, you can run `$ make rele
 |Option|Default|Description|
 |--|--|--|
 |usr_is_host|false|Hostnames/IP's are redundant when this is true, instead they will be derived from the username as: username + .local|
-|multi_threaded|true|Enables the use of multiple threads per host. Will spawn goroutines for every password but is capped by max_threads.|
-|max_threads|10|Maximum amount of goroutines per host when multi_threaded is true. For example: if max_threads is 10 and the dictionary length is 25, 10 routines will be spawned, after completion another 10 will be spawned and finally 5 more will be spawned to complete the dictionary.|
+|multi_threaded|true|Enables the use of multiple threads per host. Will continuously assign passwords to a goroutine in the pool of the configured size (until the end of the dictionary is reached, of course).|
+|goroutines|10|Goroutine pool size in multi-threaded mode.|
 |mode|"manual"|Can be set to either "manual" or "hostlist". In manual mode you enter hosts manually one-by-one. In hostlist mode they are read from a hostlist file (separated by newlines).|
 |port|"22"|The SSH port to connect to, almost unexceptionally is 22.|
 |dict_path|"cfg/dict.txt"|The path of the dictionary file.|
