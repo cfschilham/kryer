@@ -1,7 +1,6 @@
 package workers
 
 import (
-	"fmt"
 	"runtime"
 	"sync"
 	"testing"
@@ -129,6 +128,5 @@ func TestPoolEarlyDismiss(t *testing.T) {
 	time.Sleep(time.Millisecond * 10) // give some time to exit goroutines
 	if runtime.NumGoroutine() > RoutinesBeforeStart {
 		t.Errorf("failed to stop all goroutines of a dismissed pool.")
-		fmt.Println(RoutinesBeforeStart, runtime.NumGoroutine())
 	}
 }
