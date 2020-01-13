@@ -1,5 +1,6 @@
 GO := go
 VERSION := v1.2.0
+BUILD_TARGET := autossh
 
 .PHONY: build windows linux darwin clean test deps
 
