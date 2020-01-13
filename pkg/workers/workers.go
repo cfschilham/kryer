@@ -1,8 +1,8 @@
 package workers
 
 import (
+	"container/list"
 	"errors"
-	"sync"
 )
 
 // Pool represents a pool of multiple managed workers
@@ -14,11 +14,8 @@ type Pool struct {
 	// when they are about to listen for incoming tasks on their task
 	// channel.
 	dormantPool chan *worker
-	queue       []Task
-
-	// Finished when the queue reached 0 tasks.
-	QueueWG sync.WaitGroup
-	dismiss chan bool
+	queue       *queue
+	dismissChan chan bool
 }
 
 // Task represents the combination of a function and parameters to
@@ -29,10 +26,20 @@ type Task struct {
 }
 
 type worker struct {
-	task        chan Task
-	taskWG      sync.WaitGroup
+	task chan Task
+
+	// Workers will transmit a pointer to themselves to this channel
+	// when they are about to listen for incoming tasks on their task
+	// channel.
 	dormantPool chan *worker
-	dismiss     chan bool
+	dismissChan chan bool
+}
+
+type queue struct {
+	queue *list.List
+	enqueue,
+	dequeue chan Task
+	dismissChan chan bool
 }
 
 // NewPool returns a new worker pool.
@@ -44,8 +51,8 @@ func NewPool(size int) (*Pool, error) {
 	return &Pool{
 		size:        size,
 		dormantPool: make(chan *worker, size),
-		dismiss:     make(chan bool, 1),
-		QueueWG:     sync.WaitGroup{},
+		dismissChan: make(chan bool, 1),
+		queue:       newQueue(),
 	}, nil
 }
 
@@ -57,46 +64,75 @@ func NewTask(fn func(params []interface{})) *Task {
 }
 
 // NewWorker returns a new worker.
-func newWorker() *worker {
+func newWorker(dp chan *worker) *worker {
 	return &worker{
-		task:    make(chan Task),
-		taskWG:  sync.WaitGroup{},
-		dismiss: make(chan bool, 1),
+		task:        make(chan Task),
+		dormantPool: dp,
+		dismissChan: make(chan bool, 1),
 	}
+}
+
+func newQueue() *queue {
+	q := &queue{
+		queue:       list.New(),
+		enqueue:     make(chan Task),
+		dequeue:     make(chan Task),
+		dismissChan: make(chan bool, 1),
+	}
+
+	go func(q *queue) {
+		for {
+			if q.queue.Front() == nil {
+				select {
+				case <-q.dismissChan:
+					break
+				case t := <-q.enqueue:
+					q.queue.PushBack(t)
+				}
+				continue
+			}
+
+			select {
+			case <-q.dismissChan:
+				break
+			case t := <-q.enqueue:
+				q.queue.PushBack(t)
+			case q.dequeue <- q.queue.Front().Value.(Task):
+				q.queue.Remove(q.queue.Front())
+			}
+		}
+	}(q)
+
+	return q
 }
 
 // QueueTask adds a task to the pools queue.
 func (p *Pool) QueueTask(t Task) {
-	p.QueueWG.Add(1)
-	p.queue = append(p.queue, t)
+	p.queue.enqueue <- t
 }
 
 // Start starts a pools goroutine as well as the goroutines of all its
 // workers.
 func (p *Pool) Start() error {
 	for i := 0; i < p.size; i++ {
-		p.workers = append(p.workers, newWorker())
+		p.workers = append(p.workers, newWorker(p.dormantPool))
 	}
 
 	for _, w := range p.workers {
-		w.dormantPool = p.dormantPool
 		w.Start()
 	}
 	go func(p *Pool) {
 		for {
 			select {
-			case <-p.dismiss:
+			case <-p.dismissChan:
 				break
-			case w := <-p.dormantPool:
-				if len(p.queue) > 0 {
-					w.setTask(p.queue[0])
-
-					if len(p.queue) > 1 {
-						p.queue = p.queue[1:]
-					} else {
-						p.queue = nil
-					}
-					p.QueueWG.Done()
+			case t := <-p.queue.dequeue:
+				select {
+				case w := <-p.dormantPool:
+					w.setTask(t)
+				default:
+					// If there currently isn't any dormant worker, requeue the task.
+					p.QueueTask(t)
 				}
 			}
 		}
@@ -106,18 +142,11 @@ func (p *Pool) Start() error {
 
 // Dismiss dismisses the pool and all of its workers.
 func (p *Pool) Dismiss() {
-	p.dismiss <- true
+	p.dormantPool = nil
+	p.dismissChan <- true
+	p.queue.dismiss()
 	for _, w := range p.workers {
-		w.Dismiss()
-	}
-}
-
-// Wait waits for the pools queue to empty and then for all workers to finish. Do
-// not queue tasks at the same time as this might cause unwanted behaviour.
-func (p *Pool) Wait() {
-	p.QueueWG.Wait()
-	for _, w := range p.workers {
-		w.taskWG.Wait()
+		w.dismiss()
 	}
 }
 
@@ -126,18 +155,16 @@ func (t *Task) SetParams(params []interface{}) {
 	t.params = params
 }
 
-// Dismiss dismisses a worker, ending its goroutine.
-func (w *worker) Dismiss() {
-	w.dismiss <- true
+// dismiss dismisses a worker, ending its goroutine.
+func (w *worker) dismiss() {
+	w.dismissChan <- true
 
 	// Safeguard to prevent the pool from sending to a dismissed worker's task channel.
 	w.task = nil
 }
 
-// SetTask attempts to give a worker a new task. If the worker is busy an error
-// will be returned, otherwise nil will be returned.
+// setTask gives a worker a new task.
 func (w *worker) setTask(t Task) {
-	w.taskWG.Add(1)
 	w.task <- t
 }
 
@@ -148,12 +175,19 @@ func (w *worker) Start() {
 		for {
 			w.dormantPool <- w
 			select {
-			case <-w.dismiss:
+			case <-w.dismissChan:
 				break
-			case task := <-w.task:
-				task.fn(task.params)
-				w.taskWG.Done()
+			case t := <-w.task:
+				if t.fn == nil {
+					panic("workers: received nil function")
+				}
+				t.fn(t.params)
 			}
 		}
 	}(w)
+}
+
+// dismiss dismisses a queue's goroutine.
+func (q *queue) dismiss() {
+	q.dismissChan <- true
 }

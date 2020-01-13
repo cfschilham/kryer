@@ -63,7 +63,7 @@ func TestLoadDict(t *testing.T) {
 }
 
 func TestStrToHost(t *testing.T) {
-	tables := []struct {
+	tests := []struct {
 		str       string
 		usrIsHost bool
 		host      Host
@@ -76,7 +76,7 @@ func TestStrToHost(t *testing.T) {
 		{str: "username321", usrIsHost: true, host: Host{username: "username321", addr: "username321.local"}},
 	}
 
-	for _, entry := range tables {
+	for _, entry := range tests {
 		host, err := StrToHost(entry.str, entry.usrIsHost)
 		if err != nil {
 			t.Fatalf("TestStrToHost: failed to run function")
@@ -89,7 +89,7 @@ func TestStrToHost(t *testing.T) {
 }
 
 func TestSlcToHosts(t *testing.T) {
-	tables := []struct {
+	tests := []struct {
 		slc       []string
 		usrIsHost bool
 		hosts     []Host
@@ -114,7 +114,7 @@ func TestSlcToHosts(t *testing.T) {
 		},
 	}
 
-	for _, entry := range tables {
+	for _, entry := range tests {
 		hosts, err := SlcToHosts(entry.slc, entry.usrIsHost)
 		if err != nil {
 			t.Fatalf("TestSlcToHost: failed to run function")
