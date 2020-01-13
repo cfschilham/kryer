@@ -1,8 +1,7 @@
 GO := go
 VERSION := v1.2.0
-BUILD_TARGET := autossh
 
-.PHONY: build windows linux darwin clean test deps
+.PHONY: build release release_windows release_linux release_darwin clean test deps
 
 build:
 	$(GO) build -v
@@ -17,19 +16,19 @@ release_windows:
 	mkdir autossh-$(VERSION)-windows-amd64
 	cp -r cfg autossh-$(VERSION)-windows-amd64
 	cp LICENSE autossh-$(VERSION)-windows-amd64/LICENSE
-	env GOOS=windows GOARCH=amd64 $(GO) build -v -o autossh-$(VERSION)-windows-amd64/$(BUILD_TARGET).exe
+	env GOOS=windows GOARCH=amd64 $(GO) build -v -o autossh-$(VERSION)-windows-amd64/
 
 release_linux:
 	mkdir autossh-$(VERSION)-linux-amd64
 	cp -r cfg autossh-$(VERSION)-linux-amd64
 	cp LICENSE autossh-$(VERSION)-linux-amd64/LICENSE
-	env GOOS=linux GOARCH=amd64 $(GO) build -v -o autossh-$(VERSION)-linux-amd64/$(BUILD_TARGET)
+	env GOOS=linux GOARCH=amd64 $(GO) build -v -o autossh-$(VERSION)-linux-amd64/
 
 release_darwin:
 	mkdir autossh-$(VERSION)-darwin-amd64
 	cp -r cfg autossh-$(VERSION)-darwin-amd64
 	cp LICENSE autossh-$(VERSION)-darwin-amd64/LICENSE
-	env GOOS=darwin GOARCH=amd64 $(GO) build -v -o autossh-$(VERSION)-darwin-amd64/$(BUILD_TARGET)
+	env GOOS=darwin GOARCH=amd64 $(GO) build -v -o autossh-$(VERSION)-darwin-amd64/
 
 clean:
 	$(GO) clean
