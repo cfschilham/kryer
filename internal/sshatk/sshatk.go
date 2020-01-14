@@ -77,9 +77,7 @@ func SSHDictMT(addr, port, username string, pwds []string, goroutines int) (stri
 		pool.QueueTask(*task)
 	}
 
-	if err := pool.Start(); err != nil {
-		return "", err
-	}
+	pool.Start()
 	defer pool.Dismiss()
 
 	select {
