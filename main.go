@@ -6,6 +6,7 @@ import (
 	"log"
 	"math"
 	"os"
+	"strings"
 
 	"github.com/cfschilham/autossh/internal/loadcfg"
 	"github.com/cfschilham/autossh/internal/sshatk"
@@ -46,7 +47,7 @@ func main() {
 				continue
 			}
 
-			if input == "exit" {
+			if strings.ToLower(input) == "exit" {
 				os.Exit(0)
 			}
 

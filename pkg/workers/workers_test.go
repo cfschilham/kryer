@@ -37,10 +37,7 @@ func TestPool(t *testing.T) {
 	}
 
 	RoutinesBeforeStart := runtime.NumGoroutine()
-	if err := pool.Start(); err != nil {
-		t.Errorf("error starting pool: %s", err.Error())
-		return
-	}
+	pool.Start()
 
 	wg.Wait()
 
@@ -86,9 +83,9 @@ func TestPool(t *testing.T) {
 	}
 
 	pool.Dismiss()
-	time.Sleep(time.Millisecond * 10) // give some time to exit goroutines
+	time.Sleep(time.Millisecond * 10) // give some time for goroutines to exit
 	if runtime.NumGoroutine() > RoutinesBeforeStart {
-		t.Errorf("failed to stop all goroutines of a dismissed pool.")
+		t.Errorf("failed to stop all goroutines of a dismissed pool, try giving more time")
 	}
 }
 
@@ -103,7 +100,7 @@ func TestPoolEarlyDismiss(t *testing.T) {
 			c  = params[2].(chan int)
 		)
 		c <- n1 * n2
-		time.Sleep(time.Millisecond * 50)
+		time.Sleep(time.Millisecond * 8)
 	})
 
 	pool, err := NewPool(poolSize)
@@ -119,14 +116,11 @@ func TestPoolEarlyDismiss(t *testing.T) {
 	}
 
 	RoutinesBeforeStart := runtime.NumGoroutine()
-	if err := pool.Start(); err != nil {
-		t.Errorf("error starting pool: %s", err.Error())
-		return
-	}
+	pool.Start()
 
 	pool.Dismiss()
-	time.Sleep(time.Millisecond * 10) // give some time to exit goroutines
+	time.Sleep(time.Millisecond * 10) // give some time for goroutines to exit
 	if runtime.NumGoroutine() > RoutinesBeforeStart {
-		t.Errorf("failed to stop all goroutines of a dismissed pool.")
+		t.Errorf("failed to stop all goroutines of a dismissed pool, try giving more time")
 	}
 }
