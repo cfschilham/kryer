@@ -1,5 +1,5 @@
 GO := go
-VERSION := v1.2.0
+VERSION := v1.2.1
 
 .PHONY: build release release_windows release_linux release_darwin clean test deps
 
@@ -32,10 +32,10 @@ release_darwin:
 
 clean:
 	$(GO) clean
-	rm -r autossh-$(VERSION)
-	rm -r autossh-$(VERSION)-windows-amd64
-	rm -r autossh-$(VERSION)-linux-amd64
-	rm -r autossh-$(VERSION)-darwin-amd64
+	rm -rf autossh-$(VERSION)
+	rm -rf autossh-$(VERSION)-windows-amd64
+	rm -rf autossh-$(VERSION)-linux-amd64
+	rm -rf autossh-$(VERSION)-darwin-amd64
 
 test:
 	$(GO) test ./...

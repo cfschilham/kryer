@@ -115,9 +115,9 @@ func (h Host) ResolveAddr() (string, error) {
 }
 
 // LoadConfig returns a config type based on the values in cfg/config.yml.
-func LoadConfig() (*Config, error) {
-	viper.SetConfigName("config")
-	viper.AddConfigPath("cfg")
+func LoadConfig(dir string) (*Config, error) {
+	viper.SetConfigName("config.yml")
+	viper.AddConfigPath(dir)
 	if err := viper.ReadInConfig(); err != nil {
 		return nil, fmt.Errorf("internal/loadcfg: failed to load config: %s", err.Error())
 	}

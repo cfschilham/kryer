@@ -6,6 +6,7 @@ import (
 	"log"
 	"math"
 	"os"
+	"path"
 	"strings"
 
 	"github.com/cfschilham/autossh/internal/loadcfg"
@@ -17,14 +18,20 @@ const VERSION = "v1.2.0"
 func main() {
 	fmt.Printf("AutoSSH %s - https://github.com/cfschilham/autossh\n", VERSION)
 
+	executable, err := os.Executable()
+	if err != nil {
+		log.Fatalln(err.Error())
+	}
+	executableDir := path.Dir(executable)
+
 	fmt.Printf("Loading cfg/config.yml...\n")
-	config, err := loadcfg.LoadConfig()
+	config, err := loadcfg.LoadConfig(path.Join(executableDir, "cfg"))
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
 
 	fmt.Printf("Loading %s...\n", config.DictPath())
-	dict, err := loadcfg.LoadDict(config.DictPath())
+	dict, err := loadcfg.LoadDict(path.Join(executableDir, config.DictPath()))
 	if err != nil {
 		log.Fatalln(err.Error())
 	}
@@ -90,7 +97,7 @@ func main() {
 
 	case "hostlist":
 		fmt.Printf("Loading %s...\n", config.HostlistPath())
-		hosts, err := loadcfg.LoadHostlist(config.HostlistPath(), config.UsrIsHost())
+		hosts, err := loadcfg.LoadHostlist(path.Join(executableDir, config.HostlistPath()), config.UsrIsHost())
 		if err != nil {
 			log.Fatalln(err.Error())
 		}
