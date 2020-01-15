@@ -5,11 +5,20 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 func TestPool(t *testing.T) {
-	poolSize := 10
-	taskQty := 20
+	var (
+		poolSize = 4
+		taskQty  = 20
+		n1       = 8
+		n2       = 8
+		want     = 64
+		c        = make(chan int, taskQty)
+		wg       = &sync.WaitGroup{}
+	)
 
 	task := NewTask(func(params []interface{}) {
 		var (
@@ -28,10 +37,8 @@ func TestPool(t *testing.T) {
 		return
 	}
 
-	c := make(chan int, taskQty)
-	wg := &sync.WaitGroup{}
 	wg.Add(taskQty)
-	task.SetParams([]interface{}{8, 8, c, wg})
+	task.SetParams([]interface{}{n1, n2, c, wg})
 	for i := 0; i < taskQty; i++ {
 		pool.QueueTask(*task)
 	}
@@ -48,9 +55,9 @@ func TestPool(t *testing.T) {
 
 	for i := 0; i < taskQty; i++ {
 		select {
-		case n := <-c:
-			if n != 64 {
-				t.Errorf("unexpected result received, want: %d got %d", 64, n)
+		case got := <-c:
+			if got != want {
+				t.Errorf("unexpected result received, want: %d got %d", want, got)
 			}
 		default:
 			t.Errorf("could not receive from channel c")
@@ -72,9 +79,9 @@ func TestPool(t *testing.T) {
 
 	for i := 0; i < taskQty; i++ {
 		select {
-		case n := <-c:
-			if n != 64 {
-				t.Errorf("unexpected result received, want: %d got %d", 64, n)
+		case got := <-c:
+			if got != want {
+				t.Errorf("unexpected result received, want: %d got %d", want, got)
 			}
 		default:
 			t.Errorf("could not receive from channel c")
@@ -90,16 +97,10 @@ func TestPool(t *testing.T) {
 }
 
 func TestPoolEarlyDismiss(t *testing.T) {
-	poolSize := 10
+	poolSize := 4
 	taskQty := 20
 
 	task := NewTask(func(params []interface{}) {
-		var (
-			n1 = params[0].(int)
-			n2 = params[1].(int)
-			c  = params[2].(chan int)
-		)
-		c <- n1 * n2
 		time.Sleep(time.Millisecond * 8)
 	})
 
@@ -109,8 +110,6 @@ func TestPoolEarlyDismiss(t *testing.T) {
 		return
 	}
 
-	c := make(chan int, taskQty)
-	task.SetParams([]interface{}{8, 8, c})
 	for i := 0; i < taskQty; i++ {
 		pool.QueueTask(*task)
 	}
@@ -123,4 +122,37 @@ func TestPoolEarlyDismiss(t *testing.T) {
 	if runtime.NumGoroutine() > RoutinesBeforeStart {
 		t.Errorf("failed to stop all goroutines of a dismissed pool, try giving more time")
 	}
+}
+
+func BenchmarkPool(b *testing.B) {
+	var (
+		poolSize = runtime.NumCPU()
+		taskQty  = runtime.NumCPU() * b.N * 2
+		wg       = &sync.WaitGroup{}
+	)
+
+	task := NewTask(func(params []interface{}) {
+		var (
+			wg = params[0].(*sync.WaitGroup)
+		)
+		bcrypt.GenerateFromPassword([]byte("benchmark"), 12)
+		wg.Done()
+	})
+
+	pool, err := NewPool(poolSize)
+	if err != nil {
+		b.Errorf("error creating pool: %s", err.Error())
+		return
+	}
+	wg.Add(taskQty)
+	for i := 0; i < taskQty; i++ {
+		task.SetParams([]interface{}{wg})
+		pool.QueueTask(*task)
+	}
+
+	b.StartTimer()
+	pool.Start()
+	wg.Wait()
+	b.StopTimer()
+	pool.Dismiss()
 }

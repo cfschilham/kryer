@@ -57,7 +57,7 @@ func NewPool(size int) (*Pool, error) {
 	return &Pool{
 		size:        size,
 		dormantPool: make(chan *worker, size),
-		dismiss:     make(chan bool, 1),
+		dismiss:     make(chan bool),
 		queue:       newQueue(),
 	}, nil
 }
@@ -84,7 +84,7 @@ func newQueue() *queue {
 		queue:   list.New(),
 		enqueue: make(chan Task),
 		dequeue: make(chan Task),
-		dismiss: make(chan bool, 1),
+		dismiss: make(chan bool),
 	}
 
 	// A queue is started immediately on creation to be able to queue tasks
@@ -143,13 +143,12 @@ func (p *Pool) start() {
 			select {
 			case <-p.dismiss:
 				runtime.Goexit()
-			case t := <-p.queue.dequeue:
+			case w := <-p.dormantPool: // wait for dormant worker
 				select {
-				case w := <-p.dormantPool:
-					w.task <- t
-				default:
-					// If there currently isn't any dormant worker, requeue the task.
-					p.QueueTask(t)
+				case <-p.dismiss:
+					runtime.Goexit()
+				case t := <-p.queue.dequeue: // wait for queued task to assign
+					w.task <- t // assign task to worker
 				}
 			}
 		}
