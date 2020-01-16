@@ -42,7 +42,7 @@ type worker struct {
 }
 
 type queue struct {
-	queue *list.List
+	queued *list.List
 	enqueue,
 	dequeue chan Task
 	dismiss chan bool
@@ -67,30 +67,6 @@ func NewTask(fn func(params []interface{})) *Task {
 	return &Task{
 		fn: fn,
 	}
-}
-
-// newWorker returns a new worker.
-func newWorker(dp chan *worker) *worker {
-	return &worker{
-		task:        make(chan Task),
-		dormantPool: dp,
-		dismiss:     make(chan bool, 1),
-	}
-}
-
-// newQueue returns a new queue.
-func newQueue() *queue {
-	q := &queue{
-		queue:   list.New(),
-		enqueue: make(chan Task),
-		dequeue: make(chan Task),
-		dismiss: make(chan bool),
-	}
-
-	// A queue is started immediately on creation to be able to queue tasks
-	// before the pool is started.
-	q.start()
-	return q
 }
 
 // QueueTask adds a task to the pools queue.
@@ -136,6 +112,30 @@ func (t *Task) SetParams(params []interface{}) {
 	t.params = params
 }
 
+// newWorker returns a new worker.
+func newWorker(dp chan *worker) *worker {
+	return &worker{
+		task:        make(chan Task),
+		dormantPool: dp,
+		dismiss:     make(chan bool, 1),
+	}
+}
+
+// newQueue returns a new queue.
+func newQueue() *queue {
+	q := &queue{
+		queued:  list.New(),
+		enqueue: make(chan Task),
+		dequeue: make(chan Task),
+		dismiss: make(chan bool),
+	}
+
+	// A queue is started immediately on creation to be able to queue tasks
+	// before the pool is started.
+	q.start()
+	return q
+}
+
 // start starts the goroutine of the pool. It is stopped when the pool is dismissed.
 func (p *Pool) start() {
 	go func(p *Pool) {
@@ -174,12 +174,12 @@ func (w *worker) start() {
 func (q *queue) start() {
 	go func(q *queue) {
 		for {
-			if q.queue.Front() == nil {
+			if q.queued.Front() == nil {
 				select {
 				case <-q.dismiss:
 					runtime.Goexit()
 				case t := <-q.enqueue:
-					q.queue.PushBack(t)
+					q.queued.PushBack(t)
 				}
 			}
 
@@ -187,9 +187,9 @@ func (q *queue) start() {
 			case <-q.dismiss:
 				runtime.Goexit()
 			case t := <-q.enqueue:
-				q.queue.PushBack(t)
-			case q.dequeue <- q.queue.Front().Value.(Task):
-				q.queue.Remove(q.queue.Front())
+				q.queued.PushBack(t)
+			case q.dequeue <- q.queued.Front().Value.(Task):
+				q.queued.Remove(q.queued.Front())
 			}
 		}
 	}(q)

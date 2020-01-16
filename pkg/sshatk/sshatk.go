@@ -6,7 +6,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/cfschilham/autossh/workers"
+	"github.com/cfschilham/autossh/pkg/workers"
 	"golang.org/x/crypto/ssh"
 )
 
