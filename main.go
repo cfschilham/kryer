@@ -20,13 +20,13 @@ var infoTag = color.HiBlueString("[Info]")
 
 func main() {
 	fmt.Printf(color.YellowString(
-		`    _         _       ____ ____  _   _ 
+`    _         _       ____ ____  _   _ 
    / \  _   _| |_ ___/ ___/ ___|| | | |
   / _ \| | | | __/ _ \___ \___ \| |_| |
  / ___ \ |_| | || (_) |__) |__) |  _  |
 /_/   \_\__,_|\__\___/____/____/|_| |_|                               
 
-`),
+`		),
 	)
 	fmt.Printf(color.YellowString("AutoSSH %s - https://github.com/cfschilham/autossh\n\n", VERSION))
 
