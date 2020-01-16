@@ -10,11 +10,11 @@ import (
 	"strings"
 
 	"github.com/cfschilham/autossh/internal/loadcfg"
-	"github.com/cfschilham/autossh/internal/sshatk"
+	"github.com/cfschilham/autossh/sshatk"
 	"github.com/fatih/color"
 )
 
-const VERSION = "v1.2.1"
+const VERSION = "v1.2.2"
 
 var infoTag = color.HiBlueString("[Info]")
 
@@ -101,7 +101,7 @@ func main() {
 			fmt.Printf(color.GreenString("[Success] Password of %s@%s found: '%s'\n", host.Username(), host.Addr(), pwd))
 			if config.OutputPath() != "" {
 				credentials := fmt.Sprintf("%s@%s:%s\n", host.Username(), host.Addr(), pwd)
-				if err := loadcfg.ExportToFile(credentials, config.OutputPath()); err != nil {
+				if err := loadcfg.ExportToFile(credentials, path.Join(executableDir, config.OutputPath())); err != nil {
 					fmt.Printf(color.HiRedString("[Error] %s\n", err.Error()))
 				}
 			}
@@ -141,7 +141,7 @@ func main() {
 			fmt.Printf(color.GreenString("[Success] Password of %s@%s found: '%s'\n", host.Username(), host.Addr(), pwd))
 			if config.OutputPath() != "" {
 				credentials := fmt.Sprintf("%s@%s:%s\n", host.Username(), host.Addr(), pwd)
-				if err := loadcfg.ExportToFile(credentials, config.OutputPath()); err != nil {
+				if err := loadcfg.ExportToFile(credentials, path.Join(executableDir, config.OutputPath())); err != nil {
 					fmt.Fprintln(os.Stderr, err.Error())
 				}
 			}
