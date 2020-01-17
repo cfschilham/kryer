@@ -1,4 +1,4 @@
-package workers
+package workers_test
 
 import (
 	"runtime"
@@ -6,153 +6,109 @@ import (
 	"testing"
 	"time"
 
+	"github.com/cfschilham/autossh/pkg/workers"
 	"golang.org/x/crypto/bcrypt"
 )
 
 func TestPool(t *testing.T) {
 	var (
-		poolSize = 4
-		taskQty  = 20
-		n1       = 8
-		n2       = 8
-		want     = 64
-		c        = make(chan int, taskQty)
-		wg       = &sync.WaitGroup{}
+		poolSize    = 8
+		taskQty     = 16
+		taskContent = "test"
 	)
 
-	task := NewTask(func(params []interface{}) {
+	// Set the task and its parameters.
+	c, wg := make(chan string, taskQty), &sync.WaitGroup{}
+	task := workers.NewTask(func(params []interface{}) {
 		var (
-			n1 = params[0].(int)
-			n2 = params[1].(int)
-			c  = params[2].(chan int)
-			wg = params[3].(*sync.WaitGroup)
+			taskContent = params[0].(string)
+			c           = params[1].(chan string)
+			wg          = params[2].(*sync.WaitGroup)
 		)
-		c <- n1 * n2
+
+		c <- taskContent
 		wg.Done()
 	})
+	task.SetParams([]interface{}{taskContent, c, wg})
 
-	pool, err := NewPool(poolSize)
+	// Create the pool.
+	pool, err := workers.NewPool(poolSize)
 	if err != nil {
-		t.Errorf("error creating pool: %s", err.Error())
+		t.Errorf("failed to create new pool")
 		return
 	}
 
-	wg.Add(taskQty)
-	task.SetParams([]interface{}{n1, n2, c, wg})
+	// Enqueue all tasks to the pools queue.
 	for i := 0; i < taskQty; i++ {
+		wg.Add(1)
 		pool.QueueTask(*task)
 	}
-
-	RoutinesBeforeStart := runtime.NumGoroutine()
 	pool.Start()
-
+	defer pool.Close()
 	wg.Wait()
 
-	if len(c) != taskQty {
-		t.Errorf("did not receive the right amount of results, want: %d got: %d", taskQty, len(c))
-		return
-	}
-
-	for i := 0; i < taskQty; i++ {
-		select {
-		case got := <-c:
-			if got != want {
-				t.Errorf("unexpected result received, want: %d got %d", want, got)
-			}
-		default:
-			t.Errorf("could not receive from channel c")
-			return
-		}
-	}
-
-	wg.Add(taskQty)
-	for i := 0; i < taskQty; i++ {
-		pool.QueueTask(*task)
-	}
-
-	wg.Wait()
-
+	// Check results
 	if len(c) != taskQty {
 		t.Errorf("did not receive enough results, want: %d got: %d", taskQty, len(c))
 		return
 	}
 
-	for i := 0; i < taskQty; i++ {
-		select {
-		case got := <-c:
-			if got != want {
-				t.Errorf("unexpected result received, want: %d got %d", want, got)
-			}
-		default:
-			t.Errorf("could not receive from channel c")
+	for i := 0; i < len(c); i++ {
+		want, got := taskContent, <-c
+		if got != want {
+			t.Errorf("unexpected result, want: %s got: %s", want, got)
 			return
 		}
 	}
-
-	pool.Dismiss()
-	time.Sleep(time.Millisecond * 10) // give some time for goroutines to exit
-	if runtime.NumGoroutine() > RoutinesBeforeStart {
-		t.Errorf("failed to stop all goroutines of a dismissed pool, try giving more time")
-	}
 }
 
-func TestPoolEarlyDismiss(t *testing.T) {
-	poolSize := 4
-	taskQty := 20
+func TestPoolGoroutines(t *testing.T) {
+	before := runtime.NumGoroutine()
+	t.Run("", TestPool)
 
-	task := NewTask(func(params []interface{}) {
-		time.Sleep(time.Millisecond * 8)
-	})
-
-	pool, err := NewPool(poolSize)
-	if err != nil {
-		t.Errorf("error creating pool: %s", err.Error())
-		return
+	after := time.After(time.Millisecond * 50)
+	for runtime.NumGoroutine() > before {
+		select {
+		case <-after:
+			t.Errorf("failed to close all of the pools goroutines within 50ms, before: %d now: %d", before, runtime.NumGoroutine())
+			return
+		default:
+		}
 	}
 
-	for i := 0; i < taskQty; i++ {
-		pool.QueueTask(*task)
-	}
-
-	RoutinesBeforeStart := runtime.NumGoroutine()
-	pool.Start()
-
-	pool.Dismiss()
-	time.Sleep(time.Millisecond * 10) // give some time for goroutines to exit
-	if runtime.NumGoroutine() > RoutinesBeforeStart {
-		t.Errorf("failed to stop all goroutines of a dismissed pool, try giving more time")
-	}
 }
 
 func BenchmarkPool(b *testing.B) {
 	var (
 		poolSize = runtime.NumCPU()
-		taskQty  = runtime.NumCPU() * b.N * 2
-		wg       = &sync.WaitGroup{}
+		taskQty  = runtime.NumCPU() * 2 * b.N
 	)
 
-	task := NewTask(func(params []interface{}) {
+	// Set the task and its parameters.
+	wg := &sync.WaitGroup{}
+	task := workers.NewTask(func(params []interface{}) {
 		var (
 			wg = params[0].(*sync.WaitGroup)
 		)
+
 		bcrypt.GenerateFromPassword([]byte("benchmark"), 12)
 		wg.Done()
 	})
+	task.SetParams([]interface{}{wg})
 
-	pool, err := NewPool(poolSize)
+	// Create the pool.
+	pool, err := workers.NewPool(poolSize)
 	if err != nil {
-		b.Errorf("error creating pool: %s", err.Error())
+		b.Errorf("failed to create new pool")
 		return
 	}
-	wg.Add(taskQty)
+
+	// Enqueue all tasks to the pools queue.
 	for i := 0; i < taskQty; i++ {
-		task.SetParams([]interface{}{wg})
+		wg.Add(1)
 		pool.QueueTask(*task)
 	}
-
-	b.StartTimer()
 	pool.Start()
+	defer pool.Close()
 	wg.Wait()
-	b.StopTimer()
-	pool.Dismiss()
 }
