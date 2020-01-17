@@ -20,16 +20,16 @@ func TestFileToSlice(t *testing.T) {
 		t.Fatalf("failed to write to temp file: %s", err.Error())
 	}
 
-	output, err := fileToSlice(path)
+	got, err := fileToSlice(path)
 	if err != nil {
 		t.Fatalf("failed to run fuction: %s", err.Error())
 	}
 
-	expectedOutput := []string{"line1", "line2", "line3", "line4", "line5"}
+	want := []string{"line1", "line2", "line3", "line4", "line5"}
 
-	for i, line := range output {
-		if line != expectedOutput[i] {
-			t.Fatalf("incorrect result, want: %s got: %s", expectedOutput, output)
+	for i, entry := range got {
+		if entry != want[i] {
+			t.Fatalf("incorrect result, want: %s got: %s", want, got)
 		}
 	}
 }
@@ -48,16 +48,16 @@ func TestLoadDict(t *testing.T) {
 		t.Fatalf("failed to write to temp file: %s", err.Error())
 	}
 
-	dict, err := LoadDict(path)
+	got, err := LoadDict(path)
 	if err != nil {
 		t.Fatalf("failed to run fuction: %s", err.Error())
 	}
 
-	expectedOutput := []string{"line1", "line2", "line3", "line4", "line5"}
+	want := []string{"line1", "line2", "line3", "line4", "line5"}
 
-	for i, line := range dict.Pwds() {
-		if line != expectedOutput[i] {
-			t.Fatalf("incorrect result, want: %s got: %s", expectedOutput, dict)
+	for i, entry := range got.Pwds() {
+		if entry != want[i] {
+			t.Fatalf("incorrect result, want: %s got: %s", want, got.Pwds())
 		}
 	}
 }
@@ -124,34 +124,6 @@ func TestSlcToHosts(t *testing.T) {
 			if hosts[i] != host {
 				t.Fatalf("incorrect result, want: %s got: %s", entry.hosts, hosts)
 			}
-		}
-	}
-}
-
-func TestLoadHostlist(t *testing.T) {
-	f, err := ioutil.TempFile(os.TempDir(), "autossh-test-*.txt")
-	if err != nil {
-		t.Fatalf("TestLoadHostlist: failed to create temp file: %s", err.Error())
-	}
-
-	path := f.Name()
-	defer f.Close()
-	defer os.Remove(path)
-
-	if _, err := f.WriteString("line1\nline2\nline3\nline4\nline5\n"); err != nil {
-		t.Fatalf("TestLoadHostlist: failed to write to temp file: %s", err.Error())
-	}
-
-	host, err := LoadDict(path)
-	if err != nil {
-		t.Fatalf("TestLoadHostlist: failed to run fuction: %s", err.Error())
-	}
-
-	expectedOutput := []string{"line1", "line2", "line3", "line4", "line5"}
-
-	for i, line := range host.Pwds() {
-		if line != expectedOutput[i] {
-			t.Fatalf("TestLoadHostlist: incorrect result, want: %s got: %s", expectedOutput, host)
 		}
 	}
 }

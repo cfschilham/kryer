@@ -91,7 +91,7 @@ func (p *Pool) Start() {
 // goroutines
 func (p *Pool) Close() {
 	if p.state == 2 {
-		panic("workers: attempted to close an already closed pool")
+		panic("workers: cannot close an already closed pool")
 	}
 	p.state = 2
 	p.close <- true
