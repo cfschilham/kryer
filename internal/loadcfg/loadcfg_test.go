@@ -9,7 +9,8 @@ import (
 func TestFileToSlice(t *testing.T) {
 	f, err := ioutil.TempFile(os.TempDir(), "autossh-test-*.txt")
 	if err != nil {
-		t.Fatalf("failed to create temp file: %s", err.Error())
+		t.Errorf("failed to create temp file: %s", err.Error())
+		return
 	}
 
 	path := f.Name()
@@ -17,19 +18,21 @@ func TestFileToSlice(t *testing.T) {
 	defer os.Remove(path)
 
 	if _, err := f.WriteString("line1\nline2\nline3\nline4\nline5\n"); err != nil {
-		t.Fatalf("failed to write to temp file: %s", err.Error())
-	}
-
-	got, err := fileToSlice(path)
-	if err != nil {
-		t.Fatalf("failed to run fuction: %s", err.Error())
+		t.Errorf("failed to write to temp file: %s", err.Error())
+		return
 	}
 
 	want := []string{"line1", "line2", "line3", "line4", "line5"}
+	got, err := fileToSlice(path)
+	if err != nil {
+		t.Errorf("failed to run fuction: %s", err.Error())
+		return
+	}
 
-	for i, entry := range got {
-		if entry != want[i] {
-			t.Fatalf("incorrect result, want: %s got: %s", want, got)
+	for i := 0; i < len(got); i++ {
+		if got[i] != want[i] {
+			t.Errorf("incorrect result, want: %s got: %s", want, got)
+			return
 		}
 	}
 }
@@ -37,7 +40,8 @@ func TestFileToSlice(t *testing.T) {
 func TestLoadDict(t *testing.T) {
 	f, err := ioutil.TempFile(os.TempDir(), "autossh-test-*.txt")
 	if err != nil {
-		t.Fatalf("failed to create temp file: %s", err.Error())
+		t.Errorf("failed to create temp file: %s", err.Error())
+		return
 	}
 
 	path := f.Name()
@@ -45,68 +49,94 @@ func TestLoadDict(t *testing.T) {
 	defer os.Remove(path)
 
 	if _, err := f.WriteString("line1\nline2\nline3\nline4\nline5\n"); err != nil {
-		t.Fatalf("failed to write to temp file: %s", err.Error())
-	}
-
-	got, err := LoadDict(path)
-	if err != nil {
-		t.Fatalf("failed to run fuction: %s", err.Error())
+		t.Errorf("failed to write to temp file: %s", err.Error())
+		return
 	}
 
 	want := []string{"line1", "line2", "line3", "line4", "line5"}
+	got, err := LoadDict(path)
+	if err != nil {
+		t.Errorf("failed to run fuction: %s", err.Error())
+		return
+	}
 
-	for i, entry := range got.Pwds() {
-		if entry != want[i] {
-			t.Fatalf("incorrect result, want: %s got: %s", want, got.Pwds())
+	for i := 0; i < len(got.Pwds()); i++ {
+		if got.Pwds()[i] != want[i] {
+			t.Errorf("incorrect result, want: %s got: %s", want, got.Pwds())
+			return
 		}
 	}
 }
 
 func TestStrToHost(t *testing.T) {
-	tests := []struct {
+	type params struct {
 		str       string
 		usrIsHost bool
-		host      Host
+	}
+	testCases := []struct {
+		params params
+		want   Host
 	}{
-		{str: "user@host.local", usrIsHost: false, host: Host{username: "user", addr: "host.local"}},
-		{str: "user", usrIsHost: true, host: Host{username: "user", addr: "user.local"}},
-		{str: "user123@192.168.0.0", usrIsHost: false, host: Host{username: "user123", addr: "192.168.0.0"}},
-		{str: "username", usrIsHost: true, host: Host{username: "username", addr: "username.local"}},
-		{str: "root@localhost", usrIsHost: false, host: Host{username: "root", addr: "localhost"}},
-		{str: "username321", usrIsHost: true, host: Host{username: "username321", addr: "username321.local"}},
+		{
+			params: params{str: "user@host.local", usrIsHost: false},
+			want:   Host{username: "user", addr: "host.local"},
+		},
+		{
+			params: params{str: "user", usrIsHost: true},
+			want:   Host{username: "user", addr: "user.local"},
+		},
+		{
+			params: params{str: "user123@192.168.0.0", usrIsHost: false},
+			want:   Host{username: "user123", addr: "192.168.0.0"},
+		},
+		{
+			params: params{str: "username", usrIsHost: true},
+			want:   Host{username: "username", addr: "username.local"},
+		},
+		{
+			params: params{str: "root@localhost", usrIsHost: false},
+			want:   Host{username: "root", addr: "localhost"},
+		},
+		{
+			params: params{str: "username321", usrIsHost: true},
+			want:   Host{username: "username321", addr: "username321.local"},
+		},
 	}
 
-	for _, entry := range tests {
-		host, err := StrToHost(entry.str, entry.usrIsHost)
+	for _, testCase := range testCases {
+		got, err := StrToHost(testCase.params.str, testCase.params.usrIsHost)
 		if err != nil {
-			t.Fatalf("failed to run function")
+			t.Errorf("failed to run function: %s", err.Error())
+			return
 		}
 
-		if host != entry.host {
-			t.Fatalf("incorrect result, want: %s got: %s", entry.host, host)
+		if got != testCase.want {
+			t.Errorf("incorrect result, want: %s got: %s", testCase.want, got)
+			return
 		}
 	}
 }
 
 func TestSlcToHosts(t *testing.T) {
-	tests := []struct {
+	type params struct {
 		slc       []string
 		usrIsHost bool
-		hosts     []Host
+	}
+	testCases := []struct {
+		params params
+		want   []Host
 	}{
 		{
-			slc:       []string{"user", "user2", "user3"},
-			usrIsHost: true,
-			hosts: []Host{
+			params: params{slc: []string{"user", "user2", "user3"}, usrIsHost: true},
+			want: []Host{
 				Host{username: "user", addr: "user.local"},
 				Host{username: "user2", addr: "user2.local"},
 				Host{username: "user3", addr: "user3.local"},
 			},
 		},
 		{
-			slc:       []string{"user@192.168.0.0", "user2@192.168.0.0", "user3@192.168.0.0"},
-			usrIsHost: false,
-			hosts: []Host{
+			params: params{slc: []string{"user@192.168.0.0", "user2@192.168.0.0", "user3@192.168.0.0"}, usrIsHost: false},
+			want: []Host{
 				Host{username: "user", addr: "192.168.0.0"},
 				Host{username: "user2", addr: "192.168.0.0"},
 				Host{username: "user3", addr: "192.168.0.0"},
@@ -114,15 +144,20 @@ func TestSlcToHosts(t *testing.T) {
 		},
 	}
 
-	for _, entry := range tests {
-		hosts, err := SlcToHosts(entry.slc, entry.usrIsHost)
+	for _, testCase := range testCases {
+		got, err := SlcToHosts(testCase.params.slc, testCase.params.usrIsHost)
 		if err != nil {
-			t.Fatalf("failed to run function")
+			t.Errorf("failed to run function: %s", err.Error())
+			return
 		}
 
-		for i, host := range entry.hosts {
-			if hosts[i] != host {
-				t.Fatalf("incorrect result, want: %s got: %s", entry.hosts, hosts)
+		if len(got) != len(testCase.want) {
+			t.Errorf("discrepancy between amount of results, want: %d got: %d", len(testCase.want), len(got))
+			return
+		}
+		for i := 0; i < len(testCase.want); i++ {
+			if got[i] != testCase.want[i] {
+				t.Errorf("incorrect result, want: %s got %s", testCase.want, got)
 			}
 		}
 	}

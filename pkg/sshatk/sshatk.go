@@ -91,7 +91,7 @@ func SSHDictMT(addr, port, username string, pwds []string, goroutines int) (stri
 	}
 
 	pool.Start()
-	defer pool.Dismiss()
+	defer pool.Close()
 
 	select {
 	case pwd := <-pwdChan:
