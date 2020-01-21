@@ -14,7 +14,7 @@ import (
 	"github.com/fatih/color"
 )
 
-const VERSION = "v1.2.2"
+const VERSION = "v1.2.3"
 
 var infoTag = color.HiBlueString("[Info]")
 
@@ -43,7 +43,7 @@ func main() {
 	}
 
 	fmt.Printf("%s Loading %s...\n", infoTag, config.DictPath())
-	dict, err := loadcfg.LoadDict(path.Join(executableDir, config.DictPath()))
+	dict, err := loadcfg.LoadDict()
 	if err != nil {
 		log.Fatalln(color.HiRedString("[Error] %s\n", err.Error()))
 	}

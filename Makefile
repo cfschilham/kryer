@@ -1,5 +1,5 @@
 GO := go
-VERSION := v1.2.2
+VERSION := v1.2.3
 
 .PHONY: build release release_windows release_linux release_darwin clean test deps
 
