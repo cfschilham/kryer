@@ -14,7 +14,7 @@ import (
 	"github.com/fatih/color"
 )
 
-const VERSION = "v1.2.2"
+const VERSION = "v1.2.3"
 
 var infoTag = color.HiBlueString("[Info]")
 
