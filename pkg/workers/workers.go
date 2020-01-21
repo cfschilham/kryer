@@ -87,8 +87,8 @@ func (p *Pool) Start() {
 	p.start()
 }
 
-// Close closes the pool and all of its workers, this includes all associated.
-// goroutines
+// Close closes the pool and all of its workers, this includes all associated
+// goroutines.
 func (p *Pool) Close() {
 	if p.state == 2 {
 		panic("workers: cannot close an already closed pool")

@@ -71,7 +71,6 @@ func SSHDictMT(addr, port, username string, pwds []string, goroutines int) (stri
 			errChan  = params[5].(chan error)
 			workerWG = params[6].(*sync.WaitGroup)
 		)
-
 		defer workerWG.Done()
 		err := dial(addr, port, username, pwd)
 		if isAuth(err) {
@@ -80,7 +79,11 @@ func SSHDictMT(addr, port, username string, pwds []string, goroutines int) (stri
 			return
 		}
 		if err != nil {
-			errChan <- err
+			select {
+			case errChan <- err:
+			default:
+			}
+			return
 		}
 		pwdChan <- pwd
 	})
@@ -99,7 +102,7 @@ func SSHDictMT(addr, port, username string, pwds []string, goroutines int) (stri
 	case err := <-errChan:
 		return "", errors.New("internal/sshatk: failed to connect to host: " + err.Error())
 	case <-afterFunc(workerWG.Wait):
-		return "", errors.New("internal/sshatk: unable to connect with dictionary")
+		return "", errors.New("internal/sshatk: unable to connect")
 	}
 }
 
@@ -115,5 +118,5 @@ func SSHDictST(addr, port, username string, pwds []string) (string, error) {
 		}
 		return pwd, nil
 	}
-	return "", errors.New("internal/sshatk: unable to connect with dictionary")
+	return "", errors.New("internal/sshatk: unable to connect")
 }
