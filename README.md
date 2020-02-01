@@ -1,4 +1,4 @@
-## Installation
+# Installation
 There are several ways to install Kryer. The simpelest is probably to download the pre-compiled binaries for your specific system and architecture.
 
 **Pre-compiled Binaries**  
@@ -20,7 +20,7 @@ Start by cloning the repository into `YourGopath/src/github.com/cfschilham/kryer
 
 If that is the case you can build using `$ make build` or `$ go build` in the Kryer directory.  
   
-## Usage
+# Usage
 To run Kryer, you must always specify at least a dictionary file and a host or hostlist file. Simple, single-threaded attack:  
 `$ kryer -h root@192.168.0.0 -d yourdict.txt`  
   
