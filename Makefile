@@ -26,14 +26,17 @@ install:
 release_windows:
 	mkdir kryer-$(VERSION)-windows-amd64
 	env GOOS=windows GOARCH=amd64 $(GO) build -v -o kryer-$(VERSION)-windows-amd64/
+	zip -9 kryer-$(VERSION)-windows-amd64.zip kryer-$(VERSION)-windows-amd64/kryer
 
 release_linux:
 	mkdir kryer-$(VERSION)-linux-amd64
 	env GOOS=linux GOARCH=amd64 $(GO) build -v -o kryer-$(VERSION)-linux-amd64/
+	zip -9 kryer-$(VERSION)-linux-amd64.zip kryer-$(VERSION)-linux-amd64/kryer
 
 release_darwin:
 	mkdir kryer-$(VERSION)-darwin-amd64
 	env GOOS=darwin GOARCH=amd64 $(GO) build -v -o kryer-$(VERSION)-darwin-amd64/
+	zip -9 kryer-$(VERSION)-darwin-amd64.zip kryer-$(VERSION)-darwin-amd64/kryer
 
 clean:
 	$(GO) clean
