@@ -26,7 +26,7 @@ install:
 release_windows:
 	mkdir kryer-$(VERSION)-windows-amd64
 	env GOOS=windows GOARCH=amd64 $(GO) build -v -o kryer-$(VERSION)-windows-amd64/
-	zip -9 kryer-$(VERSION)-windows-amd64.zip kryer-$(VERSION)-windows-amd64/kryer
+	zip -9 kryer-$(VERSION)-windows-amd64.zip kryer-$(VERSION)-windows-amd64/kryer.exe
 
 release_linux:
 	mkdir kryer-$(VERSION)-linux-amd64
