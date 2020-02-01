@@ -8,7 +8,7 @@ build:
 
 install:
 	@if [ ! -d /usr/bin ]; then \
-		echo platform unsupported; \
+		echo platform unsupported for automatic installation; \
 		exit 1; \
 	fi
 

@@ -204,7 +204,7 @@ func main() {
 			hostStr = usrIsHost(hostStr)
 		}
 
-		host, err := strToHost(*args.host)
+		host, err := strToHost(hostStr)
 		if err != nil {
 			fatalf("main: unable to parse host: %s\n", err.Error())
 		}
