@@ -50,5 +50,4 @@ test:
 
 deps:
 	$(GO) get -v -u golang.org/x/crypto/ssh
-	$(GO) get -v -u github.com/spf13/viper
 	$(GO) get -v -u github.com/fatih/color
