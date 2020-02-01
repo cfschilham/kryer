@@ -18,4 +18,28 @@ If your pre-compiled binaries are not available for your system or you don't wan
 
 Start by cloning the repository into `YourGopath/src/github.com/cfschilham/kryer`. You can then build and install it using `$ sudo make install`, unless you do not have a `/usr/bin` directory.
 
-If that is the case you can build using `$ make build` or `$ go build` in the Kryer directory.
+If that is the case you can build using `$ make build` or `$ go build` in the Kryer directory.  
+  
+## Usage
+To run Kryer, you must always specify at least a dictionary file and a host or hostlist file. Simple, single-threaded attack:  
+`$ kryer -h root@192.168.0.0 -d yourdict.txt`  
+  
+To enable multi-threaded mode, you must specify the maximum amount of concurrent goroutines you would like to have at any given time. You should not go too high on this because your target might not be able to handle, say, 40+ concurrent SSH connection attempts. Example:  
+`$ kryer -h root@192.168.0.0 -d yourdict.txt -t 20`  
+  
+You can also use a list of hosts to connect to instead of a single host. This can also be used to try different usernames on one host. Example:  
+`$ kryer -H hostlist.txt -d yourdict.txt -t 20`  
+  
+With `hostlist.txt` containing, for instance:  
+```
+root@192.168.0.0
+admin@192.168.0.0
+user@192.168.0.0
+root@192.168.0.6
+admin@192.168.0.6
+user@192.168.0.6
+```
+  
+Output is also available:  
+`$ kryer -h root@192.168.0.0 -d yourdict.txt -t 20 -o outputfile.txt`  
+This file will be created if not already present and any found combinations will be written to this file in the following form: `username@adress:password`.
