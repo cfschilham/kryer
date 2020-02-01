@@ -1,8 +1,0 @@
-user_is_host: false # when enabled, all host input will automatically be interpreted as exinput@exinput.local (example with input 'exinput') whether it is from a hostlist or manual entry
-multi_threaded: true # when enabled, each password from the dict_path file will spawn a new thread
-goroutines: 20 # amount of concurrent goroutines in multi threaded mode
-mode: "manual" # manual/hostlist
-port: "22" # ssh port to connect to, conventionally 22
-dict_path: "cfg/dict.txt"
-hostlist_path: "cfg/hostlist.txt" 
-output_path: "output.txt" # ignored if set to an empty string

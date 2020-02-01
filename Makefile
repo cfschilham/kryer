@@ -1,41 +1,49 @@
 GO := go
-VERSION := v1.2.3
+VERSION := v1.2.4
 
 .PHONY: build release release_windows release_linux release_darwin clean test deps
 
 build:
 	$(GO) build -v
 
-release:
-	mkdir autossh-$(VERSION)
-	cp -r cfg autossh-$(VERSION)
-	cp LICENSE autossh-$(VERSION)/LICENSE
-	$(GO) build -v -o autossh-$(VERSION)/
+install:
+	@if [ ! -d /usr/bin ]; then \
+		echo platform unsupported; \
+		exit 1; \
+	fi
+
+	@if [ ! -w /usr/bin ]; then \
+		echo insufficient permissions, please elevate; \
+		exit 1; \
+	fi
+
+	@if [ ! -f kryer ]; then \
+		$(MAKE) build; \
+	fi
+
+	@cp kryer /usr/bin/kryer && echo installed successfully, use command kryer to start
 
 release_windows:
-	mkdir autossh-$(VERSION)-windows-amd64
-	cp -r cfg autossh-$(VERSION)-windows-amd64
-	cp LICENSE autossh-$(VERSION)-windows-amd64/LICENSE
-	env GOOS=windows GOARCH=amd64 $(GO) build -v -o autossh-$(VERSION)-windows-amd64/
+	mkdir kryer-$(VERSION)-windows-amd64
+	cp LICENSE kryer-$(VERSION)-windows-amd64/LICENSE
+	env GOOS=windows GOARCH=amd64 $(GO) build -v -o kryer-$(VERSION)-windows-amd64/
 
 release_linux:
-	mkdir autossh-$(VERSION)-linux-amd64
-	cp -r cfg autossh-$(VERSION)-linux-amd64
-	cp LICENSE autossh-$(VERSION)-linux-amd64/LICENSE
-	env GOOS=linux GOARCH=amd64 $(GO) build -v -o autossh-$(VERSION)-linux-amd64/
+	mkdir kryer-$(VERSION)-linux-amd64
+	cp LICENSE kryer-$(VERSION)-linux-amd64/LICENSE
+	env GOOS=linux GOARCH=amd64 $(GO) build -v -o kryer-$(VERSION)-linux-amd64/
 
 release_darwin:
-	mkdir autossh-$(VERSION)-darwin-amd64
-	cp -r cfg autossh-$(VERSION)-darwin-amd64
-	cp LICENSE autossh-$(VERSION)-darwin-amd64/LICENSE
-	env GOOS=darwin GOARCH=amd64 $(GO) build -v -o autossh-$(VERSION)-darwin-amd64/
+	mkdir kryer-$(VERSION)-darwin-amd64
+	cp LICENSE kryer-$(VERSION)-darwin-amd64/LICENSE
+	env GOOS=darwin GOARCH=amd64 $(GO) build -v -o kryer-$(VERSION)-darwin-amd64/
 
 clean:
 	$(GO) clean
-	rm -rf autossh-$(VERSION)
-	rm -rf autossh-$(VERSION)-windows-amd64
-	rm -rf autossh-$(VERSION)-linux-amd64
-	rm -rf autossh-$(VERSION)-darwin-amd64
+	rm -rf kryer-$(VERSION)
+	rm -rf kryer-$(VERSION)-windows-amd64
+	rm -rf kryer-$(VERSION)-linux-amd64
+	rm -rf kryer-$(VERSION)-darwin-amd64
 
 test:
 	$(GO) test ./...
