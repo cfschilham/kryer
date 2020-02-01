@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cfschilham/autossh/pkg/workers"
+	"github.com/cfschilham/kryer/pkg/workers"
 	"golang.org/x/crypto/bcrypt"
 )
 
