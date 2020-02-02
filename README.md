@@ -42,4 +42,4 @@ user@192.168.0.6
   
 Output is also available:  
 `$ kryer -h root@192.168.0.0 -d yourdict.txt -t 20 -o outputfile.txt`  
-This file will be created if not already present and any found combinations will be written to this file in the following form: `username@adress:password`.
+This file will be created if not already present and any found combinations will be written to this file in the following form: `username@address:password`.
