@@ -44,7 +44,7 @@ try:
         try:
             os.remove("/usr/bin/kryer")
         except OSError:
-            print("Not enough permission to remove /bin/kryer please excecute with sudo!!")
+            print("Not enough permission to remove /usr/bin/kryer please excecute with sudo!!")
             exit()
         print("Removed /usr/bin/kryer...")
 
