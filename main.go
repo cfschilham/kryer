@@ -24,6 +24,7 @@ var args = struct {
 	outputPath *string
 	usrIsHost     *bool
 	numGoroutines *int
+	version       *bool
 }{
 	host:          flag.String("h", "", ""),
 	hostlistPath:  flag.String("H", "", ""),
@@ -32,6 +33,7 @@ var args = struct {
 	usrIsHost:     flag.Bool("u", false, ""),
 	numGoroutines: flag.Int("t", 1, ""),
 	outputPath:    flag.String("o", "", ""),
+	version:       flag.Bool("v", false, ""),
 }
 
 func argHelp() {
@@ -46,6 +48,7 @@ Parameters:
 	-o: Output file path. If set, will output all found credentials to the specified file.
 	-u: Username is host. When enabled, the address will be derived from the username + .local.
 	-t: Maximum amount of concurrent outgoing connection attempts. Defaults to 1 if unset.
+	-v: Prints the installed version of Kryer.
 
 `,
 	)
@@ -65,10 +68,6 @@ func printfWarn(format string, a ...interface{}) {
 
 func printfSuccess(format string, a ...interface{}) {
 	fmt.Printf(color.GreenString("[Success] "+format, a...))
-}
-
-func printfTitle(format string, a ...interface{}) {
-	fmt.Printf(format, a...)
 }
 
 // fatalf is a call to printfError followed by a call to os.Exit
@@ -172,6 +171,10 @@ func main() {
 	flag.Usage = argHelp
 	flag.Parse()
 	// Validate arguments
+	if *args.version {
+		fmt.Printf(version + "\n")
+		os.Exit(0)
+	}
 	if *args.host == "" && *args.hostlistPath == "" {
 		argHelp()
 		fatalf("main: invalid argument(s): please specify a host or hostlist\n")
@@ -230,7 +233,7 @@ func main() {
 		}
 	}
 
-	printfTitle("Kryer %s - https://github.com/cfschilham/kryer\n", version)
+	fmt.Printf("Kryer %s - https://github.com/cfschilham/kryer\n", version)
 
 	// Loop through hosts and attempt to authenticate
 	for _, host := range hosts {
