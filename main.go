@@ -237,7 +237,7 @@ func main() {
 
 	// Loop through hosts and attempt to authenticate
 	for _, host := range hosts {
-		printfInfo("attempting to connect to %s@%s\n", host.username, host.addr)
+		printfInfo("Attempting to connect to %s@%s\n", host.username, host.addr)
 
 		ip, err := host.resolveAddr()
 		if err != nil {
@@ -257,7 +257,7 @@ func main() {
 			continue
 		}
 
-		printfSuccess("password of %s@%s found: %s\n", host.username, host.addr, pwd)
+		printfSuccess("Password of %s@%s found: %s\n", host.username, host.addr, pwd)
 		if *args.outputPath != "" {
 			writeToFile(fmt.Sprintf("%s@%s:%s\n", host.username, host.addr, pwd), *args.outputPath)
 		}

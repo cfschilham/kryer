@@ -8,12 +8,12 @@ build:
 
 install:
 	@if [ ! -d /usr/bin ]; then \
-		echo platform unsupported for automatic installation; \
+		echo "Unable to locate /usr/bin"; \
 		exit 1; \
 	fi
 
 	@if [ ! -w /usr/bin ]; then \
-		echo insufficient permissions, please elevate; \
+		echo "Insufficient permissions, please elevate"; \
 		exit 1; \
 	fi
 
@@ -21,7 +21,7 @@ install:
 		$(MAKE) build; \
 	fi
 
-	@cp kryer /usr/bin/kryer && echo installed successfully, use command kryer to start
+	@cp kryer /usr/bin/kryer && echo "Installed successfully, use kryer command to start"
 
 release_windows:
 	mkdir kryer-$(VERSION)-windows-amd64
