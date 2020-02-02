@@ -14,6 +14,9 @@ To set your environment variables open Control Panel > System and Security > Sys
   
 Now select path and click edit, then click browse and select the containing directory of the executable. Press OK and you should be able to run it using the `kryer` command in the command prompt.
   
+**Python Installer**
+For Darwin and Linux, a Python installer is available. Simply run `$ sh -c "$(curl https://raw.githubusercontent.com/cfschilham/kryer/master/scripts/install.sh)"`. The correct binary will automatically be installed into `/usr/bin`.  
+  
 **Building from Source**  
 If pre-compiled binaries are not available for your system or you don't want to use them for other reasons, you can build Kryer yourself from source. To do so you will need a working Go environment. 
   

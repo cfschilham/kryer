@@ -130,6 +130,3 @@ except KeyboardInterrupt:
     if(os.path.isfile('/tmp/kryer.tar.gz')):
         os.remove("/tmp/kryer.tar.gz")
     print("Exiting...")
-
-# 528bfa3abd4daf159e10bdc79fd0cb75efd9d4e6665a4a7c4f21c77f540331c5
-# 528bfa3abd4daf159e10bdc79fd0cb75efd9d4e6665a4a7c4f21c77f540331c5
