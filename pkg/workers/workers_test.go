@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cfschilham/autossh/pkg/workers"
+	"github.com/cfschilham/kryer/pkg/workers"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -19,17 +19,19 @@ func TestPool(t *testing.T) {
 
 	// Set the task and its parameters.
 	c, wg := make(chan string, taskQty), &sync.WaitGroup{}
-	task := workers.NewTask(func(params []interface{}) {
-		var (
-			taskContent = params[0].(string)
-			c           = params[1].(chan string)
-			wg          = params[2].(*sync.WaitGroup)
-		)
+	task := workers.Task{
+		Fn: func(params []interface{}) {
+			var (
+				taskContent = params[0].(string)
+				c           = params[1].(chan string)
+				wg          = params[2].(*sync.WaitGroup)
+			)
 
-		c <- taskContent
-		wg.Done()
-	})
-	task.SetParams([]interface{}{taskContent, c, wg})
+			c <- taskContent
+			wg.Done()
+		},
+		Params: []interface{}{taskContent, c, wg},
+	}
 
 	// Create the pool.
 	pool, err := workers.NewPool(poolSize)
@@ -41,7 +43,7 @@ func TestPool(t *testing.T) {
 	// Enqueue all tasks to the pools queue.
 	for i := 0; i < taskQty; i++ {
 		wg.Add(1)
-		pool.QueueTask(*task)
+		pool.QueueTask(task)
 	}
 	pool.Start()
 	defer pool.Close()
@@ -86,15 +88,17 @@ func BenchmarkPool(b *testing.B) {
 
 	// Set the task and its parameters.
 	wg := &sync.WaitGroup{}
-	task := workers.NewTask(func(params []interface{}) {
-		var (
-			wg = params[0].(*sync.WaitGroup)
-		)
+	task := workers.Task{
+		Fn: func(params []interface{}) {
+			var (
+				wg = params[0].(*sync.WaitGroup)
+			)
 
-		bcrypt.GenerateFromPassword([]byte("benchmark"), 12)
-		wg.Done()
-	})
-	task.SetParams([]interface{}{wg})
+			bcrypt.GenerateFromPassword([]byte("benchmark"), 12)
+			wg.Done()
+		},
+		Params: []interface{}{wg},
+	}
 
 	// Create the pool.
 	pool, err := workers.NewPool(poolSize)
@@ -106,7 +110,7 @@ func BenchmarkPool(b *testing.B) {
 	// Enqueue all tasks to the pools queue.
 	for i := 0; i < taskQty; i++ {
 		wg.Add(1)
-		pool.QueueTask(*task)
+		pool.QueueTask(task)
 	}
 	pool.Start()
 	defer pool.Close()

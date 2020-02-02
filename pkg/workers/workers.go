@@ -27,8 +27,8 @@ type Pool struct {
 // Task represents the combination of a function and parameters to
 // be executed by a worker.
 type Task struct {
-	fn     func(params []interface{})
-	params []interface{}
+	Fn     func(params []interface{})
+	Params []interface{}
 }
 
 type worker struct {
@@ -63,18 +63,19 @@ func NewPool(size int) (*Pool, error) {
 }
 
 // QueueTask adds a task to the pools queue.
-func (p *Pool) QueueTask(t Task) {
+func (p *Pool) QueueTask(t Task) error {
 	if p.state == 2 {
-		panic("workers: cannot queue tasks on a closed pool")
+		return errors.New("workers: cannot queue tasks on a closed pool")
 	}
 	p.queue.enqueue <- t
+	return nil
 }
 
 // Start starts a pools goroutine as well as the goroutines of all its
 // workers.
-func (p *Pool) Start() {
+func (p *Pool) Start() error {
 	if p.state != 0 {
-		panic("workers: cannot restart a running/closed pool")
+		return errors.New("workers: cannot restart a running/closed pool")
 	}
 	p.state = 1
 
@@ -85,13 +86,14 @@ func (p *Pool) Start() {
 		w.start()
 	}
 	p.start()
+	return nil
 }
 
 // Close closes the pool and all of its workers, this includes all associated
 // goroutines.
-func (p *Pool) Close() {
+func (p *Pool) Close() error {
 	if p.state == 2 {
-		panic("workers: cannot close an already closed pool")
+		return errors.New("workers: cannot close an already closed pool")
 	}
 	p.state = 2
 	p.close <- true
@@ -99,6 +101,7 @@ func (p *Pool) Close() {
 	for _, w := range p.workers {
 		w.Close()
 	}
+	return nil
 }
 
 // Close closes a workers goroutine.
@@ -109,18 +112,6 @@ func (w *worker) Close() {
 // Close closes a queue's goroutine.
 func (q *queue) Close() {
 	q.close <- true
-}
-
-// NewTask returns a new task.
-func NewTask(fn func(params []interface{})) *Task {
-	return &Task{
-		fn: fn,
-	}
-}
-
-// SetParams sets the parameters which will be passed to the tasks function.
-func (t *Task) SetParams(params []interface{}) {
-	t.params = params
 }
 
 // newWorker returns a new worker.
@@ -183,7 +174,7 @@ func (w *worker) start() {
 			case <-w.close:
 				runtime.Goexit()
 			case t := <-w.task:
-				t.fn(t.params)
+				t.Fn(t.Params)
 			}
 		}
 	}(w)

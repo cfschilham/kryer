@@ -1,28 +1,46 @@
-# Installation  
-The simplest way to install is to download the pre-compiled binaries from the releases tab. At present, pre-compiled versions are available for OSX, Linux and Windows using AMD64 architecture.  
-  
-Alternatively, you can build it yourself using the source files.  
-  
-**Pre-Compiled Binaries**  
-Download the latest release from the [releases tab](https://github.com/cfschilham/autossh/releases) which corresponds to your system.
+# Installation
+There are several ways to install Kryer. Pre-compiled binaries are available for Windows, Linux and Darwin with AMD64 architecture.
 
+**Pre-compiled Binaries**  
+Download the [latest release](https://github.com/cfschilham/kryer/releases/latest) from the releases tab which matches your system. Then copy the binary to `/usr/bin`, after that you will be able to run it using `kryer` in your terminal. Example:  
+`$ tar -xvzf kryer-v2.0.0-linux-amd64.tar.gz`  
+`$ sudo cp kryer-v2.0.0-linux-amd64/kryer /usr/bin/kryer`  
+You can now run it:  
+`$ kryer --help`  
   
-**Build from Source**  
-Sometimes, the pre-compiled binaries won't work with CGO, meaning you are unable to resolve .local hostnames. This can typically be fixed by building from source.
-
-Provided you have Go installed and configured properly, you can run `$ make release` inside the repository directory, which will create a new folder with the built files. This folder does not depend on the source code to be present.
+On Windows you can place the executable in a new directory in Program Files, for example, and then add it to your environment variables. 
   
-# Configuration  
-  All configuration can be done inside of cfg/config.yml. 
+To set your environment variables open Control Panel > System and Security > System > Advanced System Settings > Environment Variables
   
+Now select path and click edit, then click browse and select the containing directory of the executable. Press OK and you should be able to run it using the `kryer` command in the command prompt.
   
-|Option|Default|Description|
-|--|--|--|
-|usr_is_host|false|Hostnames/IP's are redundant when this is true, instead they will be derived from the username as: username + .local|
-|multi_threaded|true|Enables the use of multiple threads per host. Will continuously assign passwords to a goroutine in the pool of the configured size (until the end of the dictionary is reached, of course).|
-|goroutines|10|Goroutine pool size in multi-threaded mode.|
-|mode|"manual"|Can be set to either "manual" or "hostlist". In manual mode you enter hosts manually one-by-one. In hostlist mode they are read from a hostlist file (separated by newlines).|
-|port|"22"|The SSH port to connect to, almost unexceptionally is 22.|
-|dict_path|"cfg/dict.txt"|The path of the dictionary file.|
-|hostlist_path|"cfg/hostlist.txt"|The path of the hostlist file. Ignored if mode is "manual". With usr_is_host this file should only contain usernames. Otherwise it should contain entries in the form: username@ip each followed by a newline.|
-|output_path|"output.txt"|The path of the output file. Found credentials will be stored here. Set to "" to turn off.|
+**Building from Source**  
+If pre-compiled binaries are not available for your system or you don't want to use them for other reasons, you can build Kryer yourself from source. To do so you will need a working Go environment. 
+  
+Start by cloning the repository into `YourGopath/src/github.com/cfschilham/kryer`. You can then build and install it using `$ sudo make install`, unless you do not have a `/usr/bin` directory.
+  
+If that is the case you can build using `$ make build` or `$ go build` in the Kryer directory.  
+  
+# Usage
+To run Kryer, you must always specify at least a dictionary file and a host or hostlist file. Simple, single-threaded attack:  
+`$ kryer -h root@192.168.0.0 -d yourdict.txt`  
+  
+To enable multi-threaded mode, you must specify the maximum amount of concurrent outgoing connection attempts. You should not set this too high as a remote host might not be able to handle a large amount of concurrent incoming SSH connections. However, to decrease the amount of time it takes to go through a dictionary, it is recommended to use more than 1 (the default). Any number up to 10 should not cause trouble. Numbers up to 40 might be stable but it is recommeded you expirement with this first to avoid skipped dictionary entries due to overload. Example:  
+`$ kryer -h root@192.168.0.0 -d yourdict.txt -t 20`  
+  
+You can also use a list of hosts to connect to instead of a single host. This can also be used to try different usernames on the same host. Example:  
+`$ kryer -H hostlist.txt -d yourdict.txt`  
+  
+Where `hostlist.txt` contains, for instance:  
+```
+root@192.168.0.0
+admin@192.168.0.0
+user@192.168.0.0
+root@192.168.0.6
+admin@192.168.0.6
+user@192.168.0.6
+```
+  
+Output to a file is also possible:  
+`$ kryer -h root@192.168.0.0 -d yourdict.txt -o outputfile.txt`  
+A file will be created if one does not already exist and any found combinations will be written to this file in the following form: `username@address:password`.
