@@ -1,6 +1,11 @@
 # Installation
-There are several ways to install Kryer. Pre-compiled binaries are available for Windows, Linux and Darwin with AMD64 architecture.
-
+There are several ways to install Kryer. Pre-compiled binaries are available for Windows, Linux and Darwin with AMD64 architecture. On Darwin and Linux, a Python installer is available.
+  
+**Python Installer**  
+For Darwin and Linux, a Python installer is available. Simply run:  
+`$ sh -c "$(curl https://raw.githubusercontent.com/cfschilham/kryer/master/scripts/install.sh)"`  
+The correct binary will automatically be installed into `/usr/bin`.  
+  
 **Pre-compiled Binaries**  
 Download the [latest release](https://github.com/cfschilham/kryer/releases/latest) from the releases tab which matches your system. Then copy the binary to `/usr/bin`, after that you will be able to run it using `kryer` in your terminal. Example:  
 `$ tar -xvzf kryer-v2.0.0-linux-amd64.tar.gz`  
@@ -13,11 +18,6 @@ On Windows you can place the executable in a new directory in Program Files, for
 To set your environment variables open Control Panel > System and Security > System > Advanced System Settings > Environment Variables
   
 Now select path and click edit, then click browse and select the containing directory of the executable. Press OK and you should be able to run it using the `kryer` command in the command prompt.
-  
-**Python Installer**  
-For Darwin and Linux, a Python installer is available. Simply run:  
-`$ sh -c "$(curl https://raw.githubusercontent.com/cfschilham/kryer/master/scripts/install.sh)"`  
-The correct binary will automatically be installed into `/usr/bin`.  
   
 **Building from Source**  
 If pre-compiled binaries are not available for your system or you don't want to use them for other reasons, you can build Kryer yourself from source. To do so you will need a working Go environment. 
