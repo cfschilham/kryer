@@ -3,8 +3,8 @@ There are several ways to install Kryer. Pre-compiled binaries are available for
 
 **Pre-compiled Binaries**  
 Download the [latest release](https://github.com/cfschilham/kryer/releases/latest) from the releases tab which matches your system. Then copy the binary to `/usr/bin`, after that you will be able to run it using `kryer` in your terminal. Example:  
-`$ unzip kryer-v2.0.0-linux-amd64.zip`  
-`$ sudo cp kryer /usr/bin/kryer`  
+`$ tar -xvzf kryer-v2.0.0-linux-amd64.tar.gz`  
+`$ sudo cp kryer-v2.0.0-linux-amd64/kryer /usr/bin/kryer`  
 You can now run it:  
 `$ kryer --help`  
   
