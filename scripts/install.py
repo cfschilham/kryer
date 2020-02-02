@@ -33,7 +33,7 @@ try:
     f = urllib.urlopen(req)
     release = json.loads(f.read())
     print("Starting system scan")
-    if os.path.isfile('/bin/kryer'):
+    if os.path.isfile('/usr/bin/kryer'):
         if(VERSION == PYTHON2):
             q = raw_input("kryer already installed do want to reinstall [Y/n]? ")
         if(VERSION == PYTHON3):
