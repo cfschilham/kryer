@@ -119,7 +119,6 @@ try:
     print("Cleaning up...")
     shutil.rmtree("/tmp/kryer")
     os.remove("/tmp/kryer.tar.gz")
-    os.remove(__file__)
     os.remove("/tmp/kryer.sha256")
     print("Done...")
 except KeyboardInterrupt:
