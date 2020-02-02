@@ -39,13 +39,13 @@ func argHelp() {
 Usage: kryer [-h or -H] [dictionary] [arguments]
 
 Parameters:
-	-h: The host which will be targetted. Ignored if the hostlist option is set.
+	-h: The host which will be targeted. Ignored if the hostlist option is set.
 	-H: Hostlist file path. Settings this option will also enable the use of hostlist mode.
 	-d: Dictionary file path.
 	-p: Remote port. Defaults to 22 if unset.
 	-o: Output file path. If set, will output all found credentials to the specified file.
 	-u: Username is host. When enabled, the address will be derived from the username + .local.
-	-t: Maximum amount of concurrect outgoing connection attempts. Defaults to 1 if unset.
+	-t: Maximum amount of concurrent outgoing connection attempts. Defaults to 1 if unset.
 
 `,
 	)
@@ -71,7 +71,7 @@ func printfTitle(format string, a ...interface{}) {
 	fmt.Printf(format, a...)
 }
 
-// fatal is a call to printfError followed by a call to os.Exit
+// fatalf is a call to printfError followed by a call to os.Exit
 func fatalf(format string, a ...interface{}) {
 	printfError(format, a...)
 	os.Exit(1)
@@ -185,7 +185,7 @@ func main() {
 		fatalf("main: invalid argument(s): number of threads can't be lower than 1")
 	}
 	if *args.numGoroutines > 20 {
-		printfWarn("setting a high number of maximum concurrect connections might cause instability such as skipped dictionary entries\n")
+		printfWarn("setting a high number of maximum concurrent connections might cause instability such as skipped dictionary entries\n")
 	}
 
 	// Load dictionary
