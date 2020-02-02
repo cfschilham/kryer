@@ -39,7 +39,7 @@ try:
                 print("System architecture unsupported, build from source instead")
                 exit(0)
 
-    if not platform.system() == "Linux" or not platform.system == "Darwin":
+    if platform.system() != "Linux" and platform.system != "Darwin":
         if platform.system == "Windows":
             print(
                 "Windows is not supported by the Python installer, use pre-compiled binaries instead.")
