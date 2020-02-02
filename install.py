@@ -1,6 +1,6 @@
 try:
     import os, subprocess, shutil, stat, json, sys, platform
-    from zipfile import ZipFile
+    import tarfile
 
     PYTHON2 = 2
     PYTHON3 = 3
@@ -30,24 +30,24 @@ try:
     else:
         print("Unsupported os " + platform.system().lower())
 
-    print("Getting latest version from https://api.github.com/repos/cfschilham/autossh/releases/latest")
-    req = urllib.Request("https://api.github.com/repos/cfschilham/autossh/releases/latest")
+    print("Getting latest version from https://api.github.com/repos/cfschilham/kryer/releases/latest")
+    req = urllib.Request("https://api.github.com/repos/cfschilham/kryer/releases/latest")
     f = urllib.urlopen(req)
     release = json.loads(f.read())
     print("Starting system scan")
-    if os.path.isfile('/bin/autossh'):
+    if os.path.isfile('/bin/kryer'):
         if(VERSION == PYTHON2):
-            q = raw_input("Autossh already installed do want to reinstall [Y/n]? ")
+            q = raw_input("kryer already installed do want to reinstall [Y/n]? ")
         if(VERSION == PYTHON3):
-            q = str(input("Autossh already installed do want to reinstall [Y/n]? "))
+            q = str(input("kryer already installed do want to reinstall [Y/n]? "))
 
         if(q == "n"):
             exit()
 
         try:
-            os.remove("/bin/autossh")
+            os.remove("/usr/bin/kryer")
         except OSError:
-            print("Not enough permission to remove /bin/autossh please excecute with sudo!!")
+            print("Not enough permission to remove /bin/kryer please excecute with sudo!!")
             exit()
         print("Old file removed...")
 
@@ -57,49 +57,43 @@ try:
     versions = json.loads(f2.read())
 
     for version in versions:
-        if(platform.system().lower() in version["name"]):
+        if(platform.system().lower() in version["name"] and 'tar.gz' in version["name"]):
             print("Downloading " + version["browser_download_url"] + "...")
             if(VERSION == PYTHON2):
                 u = urllib.urlopen(version["browser_download_url"])
                 datatowrite = u.read()
 
-                with open("/tmp/autossh.zip", 'wb') as f:
+                with open("/tmp/kryer.tar.gz", 'wb') as f:
                     f.write(datatowrite)
 
             if(VERSION == PYTHON3):
-                urllib.urlretrieve(version["browser_download_url"], "/tmp/autossh.zip")
+                urllib.urlretrieve(version["browser_download_url"], "/tmp/kryer.tar.gz")
             break;
 
     print("Extracting " + version["name"] + "...")
-    name = version["name"].replace(".zip", "")
-    with ZipFile("/tmp/autossh.zip", 'r') as zipObj:
-        if(os.path.isdir('/tmp/autossh') == False):
-            os.mkdir('/tmp/autossh')
-        zipObj.extractall("/tmp/autossh")
+    name = version["name"].replace(".tar.gz", "")
 
-    if(os.path.isdir('/etc/autossh') == False):
-        os.mkdir('/etc/autossh')
+    if(os.path.isdir('/tmp/kryer') == False):
+        os.mkdir('/tmp/kryer')
+    tar = tarfile.TarFile.open("/tmp/kryer.tar.gz", "r:gz")
+    tar.extractall("/tmp/kryer")
+    tar.close()
 
-    if(os.path.isdir('/etc/autossh/config') == False):
-        os.mkdir('/etc/autossh/config')
     print("Creating files...")
 
-    shutil.move("/tmp/autossh/" + name + "/autossh", "/bin/autossh")
-    shutil.move("/tmp/autossh/" + name + "/cfg/config.yml", "/etc/autossh/config/config.yml")
-    shutil.move("/tmp/autossh/" + name + "/cfg/dict.txt", "/etc/autossh/config/dict.txt")
-    shutil.move("/tmp/autossh/" + name + "/cfg/hostlist.txt", "/etc/autossh/config/hostlist.txt")
+    shutil.move("/tmp/kryer/" + name + "/kryer", "/usr/bin/kryer")
     print("Making executable...")
-    st = os.stat('/bin/autossh')
-    os.chmod('/bin/autossh', st.st_mode | stat.S_IEXEC)
+    st = os.stat('/usr/bin/kryer')
+    os.chmod("/usr/bin/kryer", st.st_mode | stat.S_IEXEC)
     print("Cleaning up...")
-    shutil.rmtree("/tmp/autossh")
-    os.remove("/tmp/autossh.zip")
+    shutil.rmtree("/tmp/kryer")
+    os.remove("/tmp/kryer.tar.gz")
     print("Done...")
 except KeyboardInterrupt:
     print("\nKeyBoardInterrupt detected!!")
     print("Cleaning up...")
-    if(os.path.isdir('/tmp/autossh')):
-        shutil.rmtree("/tmp/autossh")
-    if(os.path.isfile('/tmp/autossh.zip')):
-        os.remove("/tmp/autossh.zip")
+    if(os.path.isdir('/tmp/kryer')):
+        shutil.rmtree("/tmp/kryer")
+    if(os.path.isfile('/tmp/kryer.tar.gz')):
+        os.remove("/tmp/kryer.tar.gz")
     print("Exiting...")
