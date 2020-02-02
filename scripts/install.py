@@ -86,6 +86,7 @@ try:
     print("Cleaning up...")
     shutil.rmtree("/tmp/kryer")
     os.remove("/tmp/kryer.tar.gz")
+    os.remove(__file__)
     print("Done...")
 except KeyboardInterrupt:
     print("\nKeyBoardInterrupt detected!!")
