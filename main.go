@@ -14,7 +14,7 @@ import (
 	"github.com/fatih/color"
 )
 
-const version = "v2.0.0"
+const version = "v2.0.1"
 
 var args = struct {
 	host,
