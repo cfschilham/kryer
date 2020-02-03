@@ -13,7 +13,7 @@ build:
 
 install:
 	@if [ ! -d $(INSTALL_DIR) ]; then \
-		echo "Unable to locate /usr/bin"; \
+		echo "Unable to locate $(INSTALL_DIR)"; \
 		exit 1; \
 	fi
 
@@ -26,7 +26,7 @@ install:
 		$(MAKE) build; \
 	fi
 
-	@cp kryer $(INSTALL_DIR)/kryer && echo "Installed successfully, use kryer command to start"
+  @cp kryer $(INSTALL_DIR)/kryer && echo "Installed successfully into $(INSTALL_DIR), use kryer command to start"
 
 release_windows:
 	mkdir kryer-$(VERSION)-windows-amd64
