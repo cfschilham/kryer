@@ -1,5 +1,5 @@
 # Disclaimer
-We do not condone, nor take any responsibility or liability whatsoever for any damages inflicted on property without explicit permission from the owner.   
+We do not condone, nor take any responsibility or liability whatsoever, under any circumstances, for any damages inflicted on property without explicit permission from the owner.
   
 # Installation
 There are several ways to install Kryer. Pre-compiled binaries are available for Windows, Linux and Darwin with AMD64 architecture. On Darwin and Linux, a Python installer is available.
