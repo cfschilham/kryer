@@ -4,7 +4,7 @@ There are several ways to install Kryer. Pre-compiled binaries are available for
 **Python Installer**  
 For Darwin and Linux, a Python installer is available. Simply run:  
 `$ sh -c "$(curl https://raw.githubusercontent.com/cfschilham/kryer/master/scripts/install.sh -s)"`  
-The correct binary will automatically be installed into `/usr/bin` or `/usr/local/bin` if you're on mac.  
+The correct binary will automatically be installed into `/usr/bin` or `/usr/local/bin` on MacOS.  
   
 **Pre-compiled Binaries**  
 Download the [latest release](https://github.com/cfschilham/kryer/releases/latest) from the releases tab which matches your system. Then copy the binary to `/usr/bin` or if you're on mac `/usr/local/bin`, after that you will be able to run it using `kryer` in your terminal. Example:  
