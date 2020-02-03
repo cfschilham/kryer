@@ -22,7 +22,7 @@ Now select path and click edit, then click browse and select the containing dire
 **Building from Source**  
 If pre-compiled binaries are not available for your system or you don't want to use them for other reasons, you can build Kryer yourself from source. To do so you will need a working Go environment. 
   
-Start by cloning the repository into `YourGopath/src/github.com/cfschilham/kryer`. You can then build and install it using `$ sudo make install`, unless you do not have a `/usr/bin` directory.
+Start by cloning the repository into `YourGopath/src/github.com/cfschilham/kryer`. You can then build and install it using `$ sudo make install`, unless you do not have a `/usr/bin` directory (will install to `/usr/local/bin` on MacOS due to SIP).
   
 If that is the case you can build using `$ make build` or `$ go build` in the Kryer directory.  
   
