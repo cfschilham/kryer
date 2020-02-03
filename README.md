@@ -16,7 +16,7 @@ Download the [latest release](https://github.com/cfschilham/kryer/releases/lates
 You can now run it:  
 `$ kryer --help`  
   
-On Windows you can place the executable in a new directory in Program Files, for example, and then add it to your environment variables. 
+On Windows, you can place the executable in a new directory in Program Files, for example, and then add it to your environment variables. 
   
 To set your environment variables open Control Panel > System and Security > System > Advanced System Settings > Environment Variables
   
@@ -33,7 +33,7 @@ If that is the case you can build using `$ make build` or `$ go build` in the Kr
 To run Kryer, you must always specify at least a dictionary file and a host or hostlist file. Simple, single-threaded attack:  
 `$ kryer -h root@192.168.0.0 -d yourdict.txt`  
   
-To enable multi-threaded mode, you must specify the maximum amount of concurrent outgoing connection attempts. You should not set this too high as a remote host might not be able to handle a large amount of concurrent incoming SSH connections. However, to decrease the amount of time it takes to go through a dictionary, it is recommended to use more than 1 (the default). Any number up to 10 should not cause trouble. Numbers up to 40 might be stable but it is recommeded you expirement with this first to avoid skipped dictionary entries due to overload. Example:  
+To enable multi-threaded mode, you must specify the maximum amount of concurrent outgoing connection attempts. You should not set this too high as a remote host might not be able to handle a large amount of concurrent incoming SSH connections. However, to decrease the amount of time it takes to go through a dictionary, it is recommended to use more than 1 (the default). Any number up to 10 should not cause trouble. Numbers up to 40 might be stable but it is recommended you experiment with this first to avoid skipped dictionary entries due to overload. Example:  
 `$ kryer -h root@192.168.0.0 -d yourdict.txt -t 20`  
   
 You can also use a list of hosts to connect to instead of a single host. This can also be used to try different usernames on the same host. Example:  
