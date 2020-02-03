@@ -1,0 +1,13 @@
+C:\Users\Ben Stokmans\source\repos\kryer\scripts\windows\Installer\Installer\bin\Debug\netcoreapp3.1\Installer.exe
+C:\Users\Ben Stokmans\source\repos\kryer\scripts\windows\Installer\Installer\obj\Debug\netcoreapp3.1\Installer.csprojAssemblyReference.cache
+C:\Users\Ben Stokmans\source\repos\kryer\scripts\windows\Installer\Installer\obj\Debug\netcoreapp3.1\Installer.AssemblyInfoInputs.cache
+C:\Users\Ben Stokmans\source\repos\kryer\scripts\windows\Installer\Installer\obj\Debug\netcoreapp3.1\Installer.AssemblyInfo.cs
+C:\Users\Ben Stokmans\source\repos\kryer\scripts\windows\Installer\Installer\bin\Debug\netcoreapp3.1\Installer.deps.json
+C:\Users\Ben Stokmans\source\repos\kryer\scripts\windows\Installer\Installer\bin\Debug\netcoreapp3.1\Installer.runtimeconfig.json
+C:\Users\Ben Stokmans\source\repos\kryer\scripts\windows\Installer\Installer\bin\Debug\netcoreapp3.1\Installer.runtimeconfig.dev.json
+C:\Users\Ben Stokmans\source\repos\kryer\scripts\windows\Installer\Installer\bin\Debug\netcoreapp3.1\Installer.dll
+C:\Users\Ben Stokmans\source\repos\kryer\scripts\windows\Installer\Installer\bin\Debug\netcoreapp3.1\Installer.pdb
+C:\Users\Ben Stokmans\source\repos\kryer\scripts\windows\Installer\Installer\bin\Debug\netcoreapp3.1\Newtonsoft.Json.dll
+C:\Users\Ben Stokmans\source\repos\kryer\scripts\windows\Installer\Installer\obj\Debug\netcoreapp3.1\Installer.csproj.CopyComplete
+C:\Users\Ben Stokmans\source\repos\kryer\scripts\windows\Installer\Installer\obj\Debug\netcoreapp3.1\Installer.dll
+C:\Users\Ben Stokmans\source\repos\kryer\scripts\windows\Installer\Installer\obj\Debug\netcoreapp3.1\Installer.pdb
