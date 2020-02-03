@@ -13,7 +13,8 @@ try:
     PYTHON3 = 3
 
     pyversion = None
-    install_location = "usr/bin"
+    installpath = "/usr/bin"
+
     # Detect OS and architecture
     if sys.version_info[0] < 3:
         pyversion = PYTHON2
@@ -46,19 +47,19 @@ try:
         else:
             print("OS unsupported, build from source instead")
         exit(1)
-    else:
-        if platform.system() == "Darwin":
-            install_location = "/usr/local/bin"
+
+    if platform.system() == "Darwin":
+        installpath = "/usr/local/bin"
             
     # Check for existance and write permissions
-    if not os.path.isdir(install_location):
-        print("Unable to locate " + install_location)
+    if not os.path.isdir(installpath):
+        print("Unable to locate " + installpath)
         exit(1)
     if not os.path.isdir("/tmp"):
         print("Unable to locate /tmp")
         exit(1)
 
-    if not os.access(install_location, os.W_OK):
+    if not os.access(installpath, os.W_OK):
         print("Insufficient permissions, please elevate")
         exit(1)
     if not os.access("/tmp", os.W_OK):
@@ -72,7 +73,7 @@ try:
     release = json.loads(response.read())
 
     print("Gathering system info ...")
-    if os.path.isfile(install_location + "/kryer"):
+    if os.path.isfile(installpath + "/kryer"):
         if pyversion == PYTHON2:
             q = raw_input(
                 "Kryer is already installed, reinstall/update [Y/n]: ")
@@ -83,15 +84,15 @@ try:
         if q.lower() == "n":
             exit(0)
 
-        print("Removing " + install_location + "/kryer...")
+        print("Removing " + installpath + "/kryer...")
 
         try:
-            os.remove(install_location + "/kryer")
+            os.remove(installpath + "/kryer")
         except OSError:
             print("Insufficient permissions, please elevate")
             exit(1)
 
-        print("Removed " + install_location + "/kryer...")
+        print("Removed " + installpath + "/kryer...")
 
     print("Getting asset list from " + release["assets_url"] + "...")
 
@@ -160,9 +161,9 @@ try:
     tar.extractall("/tmp/kryer")
     tar.close()
 
-    print("Creating files in " + install_location + "...")
+    print("Creating files in " + installpath + "...")
 
-    shutil.move("/tmp/kryer/" + filename + "/kryer", install_location + "/kryer")
+    shutil.move("/tmp/kryer/" + filename + "/kryer", installpath + "/kryer")
     print("Making executable...")
 
     shutil.rmtree("/tmp/kryer")
