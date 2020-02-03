@@ -31,13 +31,13 @@ try:
                 "Unable to detect system architecture, are you using x86_64 (AMD64) [y/N]: ")
             if q.lower() != "y":
                 print("System architecture unsupported, build from source instead")
-                exit(0)
+                exit(1)
         else:
             q = raw_input(
                 "Unable to detect system architecture, are you using x86_64 (AMD64) [y/N]: ")
             if q.lower() != "y":
                 print("System architecture unsupported, build from source instead")
-                exit(0)
+                exit(1)
 
     if platform.system() != "Linux" and platform.system != "Darwin":
         if platform.system == "Windows":
@@ -45,6 +45,7 @@ try:
                 "Windows is not supported by the Python installer, use pre-compiled binaries instead.")
         else:
             print("OS unsupported, build from source instead")
+        exit(1)
 
     # Check for existance and write permissions
     if not os.path.isdir("/usr/bin"):
