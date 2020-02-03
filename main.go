@@ -55,19 +55,24 @@ Parameters:
 }
 
 func printfInfo(format string, a ...interface{}) {
-	fmt.Printf(color.HiBlueString("[Info] ")+format, a...)
+	c := color.New(color.FgHiBlue)
+	c.Printf("[Info] ")
+	fmt.Printf(format, a...)
 }
 
 func printfError(format string, a ...interface{}) {
-	fmt.Printf(color.HiRedString("[Error] "+format, a...))
+	c := color.New(color.FgHiRed)
+	c.Printf("[Error] "+format, a...)
 }
 
 func printfWarn(format string, a ...interface{}) {
-	fmt.Printf(color.HiYellowString("[Warning] "+format, a...))
+	c := color.New(color.FgHiYellow)
+	c.Printf("[Warning] "+format, a...)
 }
 
 func printfSuccess(format string, a ...interface{}) {
-	fmt.Printf(color.GreenString("[Success] "+format, a...))
+	c := color.New(color.FgGreen)
+	c.Printf("[Success] "+format, a...)
 }
 
 // fatalf is a call to printfError followed by a call to os.Exit
