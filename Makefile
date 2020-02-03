@@ -26,7 +26,7 @@ install:
 		$(MAKE) build; \
 	fi
 
-  @cp kryer $(INSTALL_DIR)/kryer && echo "Installed successfully into $(INSTALL_DIR), use kryer command to start"
+	@cp kryer $(INSTALL_DIR)/kryer && echo "Installed successfully into $(INSTALL_DIR), use kryer command to start"; \
 
 release_windows:
 	mkdir kryer-$(VERSION)-windows-amd64
