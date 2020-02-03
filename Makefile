@@ -1,5 +1,10 @@
 GO := go
 VERSION := v2.0.0
+INSTALL_DIR := /usr/bin
+
+ifeq ($(shell uname), Darwin)
+	INSTALL_DIR = /usr/local/bin
+endif
 
 .PHONY: build release_windows release_linux release_darwin clean test deps
 
@@ -7,12 +12,12 @@ build:
 	$(GO) build -v
 
 install:
-	@if [ ! -d /usr/bin ]; then \
+	@if [ ! -d $(INSTALL_DIR) ]; then \
 		echo "Unable to locate /usr/bin"; \
 		exit 1; \
 	fi
 
-	@if [ ! -w /usr/bin ]; then \
+	@if [ ! -w $(INSTALL_DIR) ]; then \
 		echo "Insufficient permissions, please elevate"; \
 		exit 1; \
 	fi
@@ -21,7 +26,7 @@ install:
 		$(MAKE) build; \
 	fi
 
-	@cp kryer /usr/bin/kryer && echo "Installed successfully, use kryer command to start"
+	@cp kryer $(INSTALL_DIR)/kryer && echo "Installed successfully, use kryer command to start"
 
 release_windows:
 	mkdir kryer-$(VERSION)-windows-amd64
