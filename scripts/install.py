@@ -13,7 +13,7 @@ try:
     PYTHON3 = 3
 
     pyversion = None
-
+    install_location = "usr/bin"
     # Detect OS and architecture
     if sys.version_info[0] < 3:
         pyversion = PYTHON2
@@ -39,23 +39,26 @@ try:
                 print("System architecture unsupported, build from source instead")
                 exit(1)
 
-    if platform.system() != "Linux" and platform.system != "Darwin":
-        if platform.system == "Windows":
+    if platform.system() != "Linux" and platform.system() != "Darwin":
+        if platform.system() == "Windows":
             print(
                 "Windows is not supported by the Python installer, use pre-compiled binaries instead.")
         else:
             print("OS unsupported, build from source instead")
         exit(1)
-
+    else:
+        if platform.system() == "Darwin":
+            install_location = "/usr/local/bin"
+            
     # Check for existance and write permissions
-    if not os.path.isdir("/usr/bin"):
-        print("Unable to locate /usr/bin")
+    if not os.path.isdir(install_location):
+        print("Unable to locate " + install_location)
         exit(1)
     if not os.path.isdir("/tmp"):
         print("Unable to locate /tmp")
         exit(1)
 
-    if not os.access("/usr/bin", os.W_OK):
+    if not os.access(install_location, os.W_OK):
         print("Insufficient permissions, please elevate")
         exit(1)
     if not os.access("/tmp", os.W_OK):
@@ -63,13 +66,13 @@ try:
         exit(1)
 
     # Get latest release
-    print("Getting latest release information from https://api.github.com/repos/cfschilham/kryer/releases/latest ...")
+    print("Getting latest release information from https://api.github.com/repos/cfschilham/kryer/releases/latest...")
     response = urllib.urlopen(
         "https://api.github.com/repos/cfschilham/kryer/releases/latest")
     release = json.loads(response.read())
 
     print("Gathering system info ...")
-    if os.path.isfile("/usr/bin/kryer"):
+    if os.path.isfile(install_location + "/kryer"):
         if pyversion == PYTHON2:
             q = raw_input(
                 "Kryer is already installed, reinstall/update [Y/n]: ")
@@ -80,24 +83,24 @@ try:
         if q.lower() == "n":
             exit(0)
 
-        print("Removing /usr/bin/kryer ...")
+        print("Removing " + install_location + "/kryer...")
 
         try:
-            os.remove("/usr/bin/kryer")
+            os.remove(install_location + "/kryer")
         except OSError:
             print("Insufficient permissions, please elevate")
             exit(1)
 
-        print("Removed /usr/bin/kryer ...")
+        print("Removed " + install_location + "/kryer...")
 
-    print("Getting asset list from " + release["assets_url"] + " ...")
+    print("Getting asset list from " + release["assets_url"] + "...")
 
     response = urllib.urlopen(release["assets_url"])
     assets = json.loads(response.read())
 
     for asset in assets:
         if platform.system().lower() in asset["name"] and "tar.gz" in asset["name"]:
-            print("Downloading " + asset["browser_download_url"] + " ...")
+            print("Downloading " + asset["browser_download_url"] + "...")
             if(pyversion == PYTHON2):
                 response = urllib.urlopen(asset["browser_download_url"])
                 rawfile = response.read()
@@ -110,12 +113,12 @@ try:
                     asset["browser_download_url"], "/tmp/kryer.tar.gz")
             break
 
-    print("Extracting " + asset["name"] + " ...")
+    print("Extracting " + asset["name"] + "...")
     filename = asset["name"].replace(".tar.gz", "")
     for asset in assets:
         if asset["name"] == filename + ".sha256":
             print("Getting SHA256 checksum from " +
-                  asset["browser_download_url"] + " ...")
+                  asset["browser_download_url"] + "...")
             if pyversion == PYTHON2:
                 response = urllib.urlopen(asset["browser_download_url"])
                 rawfile = response.read()
@@ -130,7 +133,7 @@ try:
 
     with open("/tmp/kryer.sha256", "r") as checksum:
         checksum = checksum.read().split(" ")[0]
-    print("Verifying checksum " + checksum + " ...")
+    print("Verifying checksum " + checksum + "...")
 
     checksumFILE = hashlib.sha256()
     with open("/tmp/kryer.tar.gz", "rb") as FILE:
@@ -157,10 +160,10 @@ try:
     tar.extractall("/tmp/kryer")
     tar.close()
 
-    print("Creating files in /usr/bin ...")
+    print("Creating files in " + install_location + "...")
 
-    shutil.move("/tmp/kryer/" + filename + "/kryer", "/usr/bin/kryer")
-    print("Making executable ...")
+    shutil.move("/tmp/kryer/" + filename + "/kryer", install_location + "/kryer")
+    print("Making executable...")
 
     shutil.rmtree("/tmp/kryer")
     os.remove("/tmp/kryer.tar.gz")
