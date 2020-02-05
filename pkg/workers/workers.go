@@ -89,31 +89,6 @@ func (p *Pool) Start() error {
 	return nil
 }
 
-// Close closes the pool and all of its workers, this includes all associated
-// goroutines.
-func (p *Pool) Close() error {
-	if p.state == 2 {
-		return errors.New("workers: cannot close an already closed pool")
-	}
-	p.state = 2
-	p.close <- true
-	p.queue.Close()
-	for _, w := range p.workers {
-		w.Close()
-	}
-	return nil
-}
-
-// Close closes a workers goroutine.
-func (w *worker) Close() {
-	w.close <- true
-}
-
-// Close closes a queue's goroutine.
-func (q *queue) Close() {
-	q.close <- true
-}
-
 // newWorker returns a new worker.
 func newWorker(dp chan *worker) *worker {
 	return &worker{
@@ -140,34 +115,22 @@ func newQueue() *queue {
 
 // start starts the goroutine of the pool. It is stopped when the pool is closed.
 func (p *Pool) start() {
-	go func(p *Pool) {
+	go func() {
 		for {
-			// Select statements nested three times to make sure the pool is always
-			// listening on its close channel and can't get stuck.
+			w := <-p.dormantPool
+			t := <-p.queue.dequeue
 			select {
 			case <-p.close:
 				runtime.Goexit()
-			case w := <-p.dormantPool: // wait for dormant worker
-
-				select {
-				case <-p.close:
-					runtime.Goexit()
-				case t := <-p.queue.dequeue: // wait for queued task to assign
-
-					select {
-					case <-p.close:
-						runtime.Goexit()
-					case w.task <- t: // assign task to worker
-					}
-				}
+			case w.task <- t:
 			}
 		}
-	}(p)
+	}()
 }
 
 // start starts the goroutine of the worker. It is stopped when its pool is closed.
 func (w *worker) start() {
-	go func(w *worker) {
+	go func() {
 		for {
 			w.dormantPool <- w
 			select {
@@ -177,12 +140,12 @@ func (w *worker) start() {
 				t.Fn(t.Params)
 			}
 		}
-	}(w)
+	}()
 }
 
 // start starts the goroutine of the queue. It is stopped when its pool is closed.
 func (q *queue) start() {
-	go func(q *queue) {
+	go func() {
 		for {
 			if q.queued.Front() == nil {
 				select {
@@ -202,5 +165,40 @@ func (q *queue) start() {
 				q.queued.Remove(q.queued.Front())
 			}
 		}
-	}(q)
+	}()
+}
+
+// Close closes the pool and all of its workers, this includes all workers and the queue.
+func (p *Pool) Close() error {
+	if p.state == 2 {
+		return errors.New("workers: cannot close an already closed pool")
+	}
+	p.state = 2
+
+	for _, w := range p.workers {
+		w.Close()
+	}
+
+	// dormantPool chan must be closed to prevent the pools goroutine from getting
+	// stuck on receiving.
+	close(p.dormantPool)
+	p.queue.Close()
+	p.close <- true
+	return nil
+}
+
+// Close closes a workers goroutine.
+func (w *worker) Close() error {
+	w.close <- true
+	return nil
+}
+
+// Close closes a queue's goroutine.
+func (q *queue) Close() error {
+	q.close <- true
+
+	// dequeue chan must be closed to prevent the pools goroutine from getting
+	// stuck on receiving.
+	close(q.dequeue)
+	return nil
 }
