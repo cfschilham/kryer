@@ -1,5 +1,5 @@
 GO := go
-VERSION := v2.0.1
+VERSION := v1.3.0
 INSTALL_DIR := /usr/bin
 
 ifeq ($(shell uname), Darwin)
