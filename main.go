@@ -221,7 +221,7 @@ func main() {
 		}
 		host, err := strToHost(hostStr)
 		if err != nil {
-			fatalf("main: invalid host: %s: %s\n", hostStr, err.Error())
+			fatalf("main: unable to parse host: %s\n", err.Error())
 		}
 		hosts = append(hosts, host)
 	}
