@@ -25,7 +25,21 @@ type Pool struct {
 }
 
 // Task represents the combination of a function and parameters to
-// be executed by a worker.
+// be executed by a worker. You should use type casting in your Task function
+// to use the parameters. Example of this:
+//
+//	Task{
+//		Fn: func(params []interface{}) {
+//			var (
+//				n1 = params[0].(int)
+//				n2 = params[1].(int)
+//			)
+//
+//			fmt.Printf("Sum: %d", n1+n2)
+//		},
+//		Params: []interface{}{5, 5}
+//	}
+//
 type Task struct {
 	Fn     func(params []interface{})
 	Params []interface{}
@@ -71,8 +85,8 @@ func (p *Pool) QueueTask(t Task) error {
 	return nil
 }
 
-// Start starts a pools goroutine as well as the goroutines of all its
-// workers.
+// Start starts a pool, this includes a goroutine for all workers and two more for
+// managing and assigning tasks to them.
 func (p *Pool) Start() error {
 	if p.state != 0 {
 		return errors.New("workers: cannot restart a running/closed pool")
@@ -168,7 +182,7 @@ func (q *queue) start() {
 	}()
 }
 
-// Close closes the pool and all of its workers, this includes all workers and the queue.
+// Close closes the pool and ends all associated goroutines.
 func (p *Pool) Close() error {
 	if p.state == 2 {
 		return errors.New("workers: cannot close an already closed pool")
