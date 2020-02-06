@@ -20,7 +20,7 @@ type Options struct {
 }
 
 // dial attempts to establish a connection with the passed credentials. A nil
-// error will be returned if successful and vice versa.
+// error will be returned if successful.
 func dial(addr, port, username, pwd string) error {
 	clientConfig := &ssh.ClientConfig{
 		User: username,
@@ -39,8 +39,8 @@ func dial(addr, port, username, pwd string) error {
 	return nil
 }
 
-// afterFunc sends true to the returned channel after the completion of the passed
-// function.
+// afterFunc sends true to the returned channel after the completion of the
+// passed function.
 func afterFunc(fn func()) chan bool {
 	c := make(chan bool)
 	go func(fn func(), c chan bool) {
@@ -50,8 +50,8 @@ func afterFunc(fn func()) chan bool {
 	return c
 }
 
-// isAuth returns whether an error is an authentication error or not. Returns false
-// if err is nil.
+// isAuth returns whether an error is an authentication error or not. Returns
+// false if err is nil.
 func isAuth(err error) bool {
 	if err == nil {
 		return false
@@ -89,8 +89,8 @@ func dictMT(addr, port, username string, pwds []string, goroutines int) (string,
 		return "", err
 	}
 
-	// Transmissions over these channels will cause the dictionary attack to be ended
-	// early. A found password or a non-auth error are a good reason to do so.
+	// Transmissions over these channels will cause the dictionary attack to be
+	// ended early. A found password or a non-auth error are a good reason to do so.
 	pwdChan, errChan := make(chan string), make(chan error)
 
 	workerWG := &sync.WaitGroup{}
@@ -110,8 +110,8 @@ func dictMT(addr, port, username string, pwds []string, goroutines int) (string,
 			defer workerWG.Done()
 			err := dial(addr, port, username, pwd)
 			if isAuth(err) {
-				// Auth errors are not transmitted over errChan as this causes the pool to
-				// be dismissed.
+				// Auth errors are not transmitted over errChan as this causes
+				// the pool to be dismissed.
 				return
 			}
 			if err != nil {

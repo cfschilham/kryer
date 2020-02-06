@@ -49,7 +49,7 @@ func TestPool(t *testing.T) {
 	defer pool.Close()
 	wg.Wait()
 
-	// Check results
+	// Check results.
 	if len(c) != taskQty {
 		t.Errorf("did not receive enough results, want: %d got: %d", taskQty, len(c))
 		return

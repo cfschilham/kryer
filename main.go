@@ -110,8 +110,8 @@ func (h host) resolveAddr() (string, error) {
 	return "", fmt.Errorf("internal/loadcfg: failed to resolve host: '%s'", h.addr)
 }
 
-// fileToSlice opens the file a the passed path and returns a slice with
-// an entry for every line of that file.
+// fileToSlice opens the file a the passed path and returns a slice with an
+// entry for every line of that file.
 func fileToSlice(path string) ([]string, error) {
 	f, err := os.Open(path)
 	if err != nil {

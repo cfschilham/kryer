@@ -6,14 +6,13 @@ import (
 	"runtime"
 )
 
-// Pool represents a pool of multiple managed workers
+// Pool represents a pool of multiple managed workers.
 type Pool struct {
 	size    int
 	workers []*worker
 
-	// Workers will transmit a pointer to themselves to this channel
-	// when they are about to listen for incoming tasks on their task
-	// channel.
+	// Workers will transmit a pointer to themselves to this channel when they
+	// are about to listen for incoming tasks on their task channel.
 	dormantPool chan *worker
 	queue       *queue
 	close       chan bool
@@ -24,9 +23,9 @@ type Pool struct {
 	state uint8
 }
 
-// Task represents the combination of a function and parameters to
-// be executed by a worker. You should use type casting in your Task function
-// to use the parameters. Example of this:
+// Task represents the combination of a function and parameters to be executed
+// by a worker. You should use type casting in your Task function to use the
+// parameters. Example of this:
 //
 //	Task{
 //		Fn: func(params []interface{}) {
@@ -48,9 +47,8 @@ type Task struct {
 type worker struct {
 	task chan Task
 
-	// Workers will transmit a pointer to themselves to this channel
-	// when they are about to listen for incoming tasks on their task
-	// channel.
+	// Workers will transmit a pointer to themselves to this channel when they
+	// are about to listen for incoming tasks on their task channel.
 	dormantPool chan *worker
 	close       chan bool
 }
@@ -76,8 +74,8 @@ func NewPool(size int) (*Pool, error) {
 	}, nil
 }
 
-// QueueTask adds a task to the pools queue.
-func (p *Pool) QueueTask(t Task) error {
+// Queue queues a task on a pools queue.
+func (p *Pool) Queue(t Task) error {
 	if p.state == 2 {
 		return errors.New("workers: cannot queue tasks on a closed pool")
 	}
@@ -85,8 +83,8 @@ func (p *Pool) QueueTask(t Task) error {
 	return nil
 }
 
-// Start starts a pool, this includes a goroutine for all workers and two more for
-// managing and assigning tasks to them.
+// Start starts a pool, this includes a goroutine for each worker and two more
+// for managing and assigning tasks to them.
 func (p *Pool) Start() error {
 	if p.state != 0 {
 		return errors.New("workers: cannot restart a running/closed pool")
