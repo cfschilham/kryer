@@ -107,7 +107,7 @@ func (h host) resolveAddr() (string, error) {
 			return ip.To4().String(), nil
 		}
 	}
-	return "", fmt.Errorf("internal/loadcfg: failed to resolve host: '%s'", h.addr)
+	return "", fmt.Errorf("failed to resolve host: '%s'", h.addr)
 }
 
 // fileToSlice opens the file a the passed path and returns a slice with an
