@@ -175,7 +175,7 @@ func writeToFile(str, path string) error {
 func main() {
 	flag.Usage = argHelp
 	flag.Parse()
-	// Validate arguments
+	// Validate arguments.
 	if *args.version {
 		fmt.Printf(version + "\n")
 		os.Exit(0)
@@ -196,46 +196,34 @@ func main() {
 		printfWarn("setting a high number of maximum concurrent connections might cause instability such as skipped dictionary entries\n")
 	}
 
-	// Load dictionary
+	// Load dictionary.
 	dict, err := fileToSlice(*args.dictPath)
 	if err != nil {
 		fatalf("main: unable to load dictionary: %s\n", err.Error())
 	}
 
-	// Load host(s)
-	var hosts []host
+	// Load host(s) in the form username@address from command-line flags or file.
+	var hostStrs []string
 	if *args.hostlistPath == "" {
+		hostStrs = append(hostStrs, *args.host)
+	} else {
+		hostStrs, err = fileToSlice(*args.dictPath)
+		if err != nil {
+			fatalf("main: unable to load hostlist file: %s\n", err.Error())
+		}
+	}
 
-		// Append single host from command line argument.
-		hostStr := *args.host
+	// Convert host(s) in the form username@address to host types.
+	var hosts []host
+	for _, hostStr := range hostStrs {
 		if *args.usrIsHost {
 			hostStr = usrIsHost(hostStr)
 		}
-
 		host, err := strToHost(hostStr)
 		if err != nil {
-			fatalf("main: unable to parse host: %s\n", err.Error())
+			fatalf("main: invalid host: %s: %s\n", hostStr, err.Error())
 		}
-
 		hosts = append(hosts, host)
-	} else {
-
-		// Append hosts from the file path given as a command line argument.
-		hostStrs, err := fileToSlice(*args.hostlistPath)
-		if err != nil {
-			fatalf("main: unable to load hostlist: %s\n", err.Error())
-		}
-
-		for _, hostStr := range hostStrs {
-			if *args.usrIsHost {
-				hostStr = usrIsHost(hostStr)
-			}
-			host, err := strToHost(hostStr)
-			if err != nil {
-				fatalf("main: unable to parse hostlist host: %s\n", err.Error())
-			}
-			hosts = append(hosts, host)
-		}
 	}
 
 	fmt.Printf("Kryer %s - https://github.com/cfschilham/kryer\n", version)
