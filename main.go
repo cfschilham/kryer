@@ -37,7 +37,7 @@ var args = struct {
 	usrIsHost:      flag.Bool("u", false, ""),
 	numGoroutines:  flag.Int("t", 1, ""),
 	timeoutResolve: flag.Int("tr", 5, ""),
-	timeoutDial:    flag.Int("tc", 10, ""),
+	timeoutDial:    flag.Int("td", 10, ""),
 	version:        flag.Bool("v", false, ""),
 }
 
@@ -100,13 +100,13 @@ func (h host) resolveAddr(ctx context.Context) (string, error) {
 	}
 
 	addrs, err := resolver.LookupHost(ctx, h.addr)
+	if err != nil {
+		return "", err
+	}
+
 	var ips []net.IP
 	for _, addr := range addrs {
 		ips = append(ips, net.ParseIP(addr))
-	}
-
-	if err != nil {
-		return "", err
 	}
 
 	for _, ip := range ips {
