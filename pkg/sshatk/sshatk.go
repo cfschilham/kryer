@@ -5,6 +5,7 @@ import (
 	"net"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/cfschilham/kryer/pkg/workers"
 	"golang.org/x/crypto/ssh"
@@ -17,16 +18,18 @@ type Options struct {
 	Username string
 	Pwds       []string
 	Goroutines int
+	Timeout    time.Duration
 }
 
 // dial attempts to establish a connection with the passed credentials. A nil
 // error will be returned if successful.
-func dial(addr, port, username, pwd string) error {
+func dial(addr, port, username, pwd string, timeout time.Duration) error {
 	clientConfig := &ssh.ClientConfig{
 		User: username,
 		Auth: []ssh.AuthMethod{
 			ssh.Password(pwd),
 		},
+		Timeout:         timeout,
 		HostKeyCallback: ssh.InsecureIgnoreHostKey(),
 	}
 
@@ -74,17 +77,20 @@ func Dict(opts Options) (string, error) {
 		return "", errors.New("sshatk: opts.Pwds is unset")
 	}
 	if opts.Goroutines < 1 {
-		return "", errors.New("sshatk: opts.Goroutines is < 1")
+		return "", errors.New("sshatk: opts.Goroutines must be higher than 0")
+	}
+	if opts.Timeout <= 0 {
+		return "", errors.New("sshatk: opts.Timeout must be higher than 0")
 	}
 
 	if opts.Goroutines == 1 {
-		return dictST(opts.Addr, opts.Port, opts.Username, opts.Pwds)
+		return dictST(opts)
 	}
-	return dictMT(opts.Addr, opts.Port, opts.Username, opts.Pwds, opts.Goroutines)
+	return dictMT(opts)
 }
 
-func dictMT(addr, port, username string, pwds []string, goroutines int) (string, error) {
-	pool, err := workers.NewPool(goroutines)
+func dictMT(opts Options) (string, error) {
+	pool, err := workers.NewPool(opts.Goroutines)
 	if err != nil {
 		return "", err
 	}
@@ -94,7 +100,7 @@ func dictMT(addr, port, username string, pwds []string, goroutines int) (string,
 	pwdChan, errChan := make(chan string), make(chan error)
 
 	workerWG := &sync.WaitGroup{}
-	workerWG.Add(len(pwds))
+	workerWG.Add(len(opts.Pwds))
 
 	task := workers.Task{
 		Fn: func(params []interface{}) {
@@ -108,7 +114,7 @@ func dictMT(addr, port, username string, pwds []string, goroutines int) (string,
 				workerWG = params[6].(*sync.WaitGroup)
 			)
 			defer workerWG.Done()
-			err := dial(addr, port, username, pwd)
+			err := dial(addr, port, username, pwd, opts.Timeout)
 			if isAuth(err) {
 				// Auth errors are not transmitted over errChan as this causes
 				// the pool to be dismissed.
@@ -125,9 +131,9 @@ func dictMT(addr, port, username string, pwds []string, goroutines int) (string,
 		},
 	}
 
-	for _, pwd := range pwds {
-		task.Params = []interface{}{addr, port, username, pwd, pwdChan, errChan, workerWG}
-		if err := pool.QueueTask(task); err != nil {
+	for _, pwd := range opts.Pwds {
+		task.Params = []interface{}{opts.Addr, opts.Port, opts.Username, pwd, pwdChan, errChan, workerWG}
+		if err := pool.Queue(task); err != nil {
 			return "", err
 		}
 	}
@@ -147,9 +153,9 @@ func dictMT(addr, port, username string, pwds []string, goroutines int) (string,
 	}
 }
 
-func dictST(addr, port, username string, pwds []string) (string, error) {
-	for _, pwd := range pwds {
-		err := dial(addr, port, username, pwd)
+func dictST(opts Options) (string, error) {
+	for _, pwd := range opts.Pwds {
+		err := dial(opts.Addr, opts.Port, opts.Username, pwd, opts.Timeout)
 		if isAuth(err) {
 			continue
 		}

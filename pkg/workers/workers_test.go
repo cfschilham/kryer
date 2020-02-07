@@ -43,7 +43,7 @@ func TestPool(t *testing.T) {
 	// Enqueue all tasks to the pools queue.
 	for i := 0; i < taskQty; i++ {
 		wg.Add(1)
-		pool.QueueTask(task)
+		pool.Queue(task)
 	}
 	pool.Start()
 	defer pool.Close()
@@ -110,7 +110,7 @@ func BenchmarkPool(b *testing.B) {
 	// Enqueue all tasks to the pools queue.
 	for i := 0; i < taskQty; i++ {
 		wg.Add(1)
-		pool.QueueTask(task)
+		pool.Queue(task)
 	}
 	pool.Start()
 	defer pool.Close()

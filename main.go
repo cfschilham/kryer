@@ -9,12 +9,13 @@ import (
 	"net"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/cfschilham/kryer/pkg/sshatk"
 	"github.com/fatih/color"
 )
 
-const version = "v1.3.0"
+const version = "v1.3.1"
 
 var args = struct {
 	host,
@@ -22,18 +23,22 @@ var args = struct {
 	dictPath,
 	port,
 	outputPath *string
-	usrIsHost     *bool
-	numGoroutines *int
-	version       *bool
+	usrIsHost *bool
+	numGoroutines,
+	timeoutResolve,
+	timeoutDial *int
+	version *bool
 }{
-	host:          flag.String("h", "", ""),
-	hostlistPath:  flag.String("H", "", ""),
-	dictPath:      flag.String("d", "", ""),
-	port:          flag.String("p", "22", ""),
-	usrIsHost:     flag.Bool("u", false, ""),
-	numGoroutines: flag.Int("t", 1, ""),
-	outputPath:    flag.String("o", "", ""),
-	version:       flag.Bool("v", false, ""),
+	host:           flag.String("h", "", ""),
+	hostlistPath:   flag.String("H", "", ""),
+	dictPath:       flag.String("d", "", ""),
+	port:           flag.String("p", "22", ""),
+	outputPath:     flag.String("o", "", ""),
+	usrIsHost:      flag.Bool("u", false, ""),
+	numGoroutines:  flag.Int("t", 1, ""),
+	timeoutResolve: flag.Int("tr", 5, ""),
+	timeoutDial:    flag.Int("tc", 10, ""),
+	version:        flag.Bool("v", false, ""),
 }
 
 func argHelp() {
@@ -41,14 +46,16 @@ func argHelp() {
 Usage: kryer [-h or -H] [dictionary] [arguments]
 
 Parameters:
-	-h: The host which will be targeted. Ignored if the hostlist option is set.
-	-H: Hostlist file path. Settings this option will also enable the use of hostlist mode.
-	-d: Dictionary file path.
-	-p: Remote port. Defaults to 22 if unset.
-	-o: Output file path. If set, will output all found credentials to the specified file.
-	-u: Username is host. When enabled, the address will be derived from the username + .local.
-	-t: Maximum amount of concurrent outgoing connection attempts. Defaults to 1 if unset.
-	-v: Prints the installed version of Kryer.
+	-h:  The host which will be targeted. Ignored if the hostlist option is set.
+	-H:  Hostlist file path. Settings this option will also enable the use of hostlist mode.
+	-d:  Dictionary file path.
+	-p:  Remote port. Defaults to 22 if unset.
+	-o:  Output file path. If set, will output all found credentials to the specified file.
+	-u:  Username is host. When enabled, the address will be derived from the username + .local.
+	-t:  Maximum amount of concurrent outgoing connection attempts. Defaults to 1 if unset.
+	-tr: Resolution timeout. Timeout in seconds for resolving a host address. Defaults to 5 if unset.
+	-td: Dialling timeout. Timeout in seconds for attempting to establish a connection with a host. Default to 10 if unset.
+	-v:  Prints the installed version of Kryer.
 
 `,
 	)
@@ -87,12 +94,12 @@ type host struct {
 }
 
 // ResolveAddr tries to resolve the address using the cgo resolver.
-func (h host) resolveAddr() (string, error) {
+func (h host) resolveAddr(ctx context.Context) (string, error) {
 	resolver := net.Resolver{
 		PreferGo: false,
 	}
 
-	addrs, err := resolver.LookupHost(context.Background(), h.addr)
+	addrs, err := resolver.LookupHost(ctx, h.addr)
 	var ips []net.IP
 	for _, addr := range addrs {
 		ips = append(ips, net.ParseIP(addr))
@@ -190,10 +197,18 @@ func main() {
 	}
 	if *args.numGoroutines < 1 {
 		argHelp()
-		fatalf("main: invalid argument(s): number of threads can't be lower than 1")
+		fatalf("main: invalid argument(s): number of threads can't be lower than 1\n")
 	}
 	if *args.numGoroutines > 20 {
 		printfWarn("setting a high number of maximum concurrent connections might cause instability such as skipped dictionary entries\n")
+	}
+	if *args.timeoutResolve <= 0 {
+		argHelp()
+		fatalf("main: invalid argument(s): resolution timeout can't be lower than or equal to 0\n")
+	}
+	if *args.timeoutDial <= 0 {
+		argHelp()
+		fatalf("main: invalid argument(s): dialling timeout can't be lower than or equal to 0\n")
 	}
 
 	// Load dictionary.
@@ -232,11 +247,14 @@ func main() {
 	for _, host := range hosts {
 		printfInfo("Attempting to connect to %s@%s\n", host.username, host.addr)
 
-		ip, err := host.resolveAddr()
+		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(*args.timeoutResolve)*time.Second)
+
+		ip, err := host.resolveAddr(ctx)
 		if err != nil {
 			printfError("main: unable to resolve address\n")
 			continue
 		}
+		cancel()
 
 		pwd, err := sshatk.Dict(sshatk.Options{
 			Addr:       ip,
@@ -244,6 +262,7 @@ func main() {
 			Username:   host.username,
 			Pwds:       dict,
 			Goroutines: *args.numGoroutines,
+			Timeout:    time.Duration(*args.timeoutDial) * time.Second,
 		})
 		if err != nil {
 			printfError("main: %s\n", err.Error())
