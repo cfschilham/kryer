@@ -10,12 +10,7 @@ import (
 type Pool struct {
 	size    int
 	workers []*worker
-
-	// Workers will transmit a pointer to themselves to this channel when they
-	// are about to listen for incoming tasks on their task channel.
-	dormantPool chan *worker
-	queue       *queue
-	close       chan bool
+	queue   *queue
 
 	// 0 = unstarted
 	// 1 = running
@@ -45,12 +40,8 @@ type Task struct {
 }
 
 type worker struct {
-	task chan Task
-
-	// Workers will transmit a pointer to themselves to this channel when they
-	// are about to listen for incoming tasks on their task channel.
-	dormantPool chan *worker
-	close       chan bool
+	task  chan Task
+	close chan bool
 }
 
 type queue struct {
@@ -65,13 +56,17 @@ func NewPool(size int) (*Pool, error) {
 	if size < 1 {
 		return nil, errors.New("workers: pool size cannot be < 1")
 	}
-
-	return &Pool{
-		size:        size,
-		dormantPool: make(chan *worker, size),
-		close:       make(chan bool),
-		queue:       newQueue(),
-	}, nil
+	p := &Pool{
+		size: size,
+		queue: &queue{
+			queued:  list.New(),
+			enqueue: make(chan Task),
+			dequeue: make(chan Task),
+			close:   make(chan bool),
+		},
+	}
+	p.queue.start()
+	return p, nil
 }
 
 // Queue queues a task on a pools queue.
@@ -83,8 +78,8 @@ func (p *Pool) Queue(t Task) error {
 	return nil
 }
 
-// Start starts a pool, this includes a goroutine for each worker and two more
-// for managing and assigning tasks to them.
+// Start starts a pool. This includes one goroutine for each worker and one for
+// the queue.
 func (p *Pool) Start() error {
 	if p.state != 0 {
 		return errors.New("workers: cannot restart a running/closed pool")
@@ -92,59 +87,21 @@ func (p *Pool) Start() error {
 	p.state = 1
 
 	for i := 0; i < p.size; i++ {
-		p.workers = append(p.workers, newWorker(p.dormantPool))
-	}
-	for _, w := range p.workers {
+		w := &worker{
+			task:  p.queue.dequeue,
+			close: make(chan bool),
+		}
+		p.workers = append(p.workers, w)
 		w.start()
 	}
-	p.start()
 	return nil
 }
 
-// newWorker returns a new worker.
-func newWorker(dp chan *worker) *worker {
-	return &worker{
-		task:        make(chan Task),
-		dormantPool: dp,
-		close:       make(chan bool),
-	}
-}
-
-// newQueue returns a new queue.
-func newQueue() *queue {
-	q := &queue{
-		queued:  list.New(),
-		enqueue: make(chan Task),
-		dequeue: make(chan Task),
-		close:   make(chan bool),
-	}
-
-	// A queue is started immediately on creation to be able to queue tasks
-	// before the pool is started.
-	q.start()
-	return q
-}
-
-// start starts the goroutine of the pool. It is stopped when the pool is closed.
-func (p *Pool) start() {
-	go func() {
-		for {
-			w := <-p.dormantPool
-			t := <-p.queue.dequeue
-			select {
-			case <-p.close:
-				runtime.Goexit()
-			case w.task <- t:
-			}
-		}
-	}()
-}
-
-// start starts the goroutine of the worker. It is stopped when its pool is closed.
+// start starts the goroutine of the worker. It is stopped when it receives on
+// its close channel.
 func (w *worker) start() {
 	go func() {
 		for {
-			w.dormantPool <- w
 			select {
 			case <-w.close:
 				runtime.Goexit()
@@ -155,7 +112,8 @@ func (w *worker) start() {
 	}()
 }
 
-// start starts the goroutine of the queue. It is stopped when its pool is closed.
+// start starts the goroutine of the queue. It is stopped when it receives on
+// its close channel.
 func (q *queue) start() {
 	go func() {
 		for {
@@ -180,37 +138,28 @@ func (q *queue) start() {
 	}()
 }
 
-// Close closes the pool and ends all associated goroutines.
+// Close closes the pool and stops all associated goroutines.
 func (p *Pool) Close() error {
 	if p.state == 2 {
 		return errors.New("workers: cannot close an already closed pool")
 	}
 	p.state = 2
 
+	p.queue.Close()
 	for _, w := range p.workers {
 		w.Close()
 	}
-
-	// dormantPool chan must be closed to prevent the pools goroutine from getting
-	// stuck on receiving.
-	close(p.dormantPool)
-	p.queue.Close()
-	p.close <- true
 	return nil
 }
 
-// Close closes a workers goroutine.
+// Close stops a workers goroutine.
 func (w *worker) Close() error {
 	w.close <- true
 	return nil
 }
 
-// Close closes a queue's goroutine.
+// Close stops a queue's goroutine.
 func (q *queue) Close() error {
 	q.close <- true
-
-	// dequeue chan must be closed to prevent the pools goroutine from getting
-	// stuck on receiving.
-	close(q.dequeue)
 	return nil
 }
