@@ -222,7 +222,7 @@ func main() {
 	if *args.hostlistPath == "" {
 		hostStrs = append(hostStrs, *args.host)
 	} else {
-		hostStrs, err = fileToSlice(*args.dictPath)
+		hostStrs, err = fileToSlice(*args.hostlistPath)
 		if err != nil {
 			fatalf("main: unable to load hostlist file: %s\n", err.Error())
 		}
