@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"context"
 	"errors"
-	"flag"
 	"fmt"
 	"net"
 	"os"
@@ -13,49 +12,49 @@ import (
 
 	"github.com/cfschilham/kryer/pkg/sshatk"
 	"github.com/fatih/color"
+	flag "github.com/spf13/pflag"
 )
 
 const version = "v1.3.2"
 
 var args = struct {
-	host,
-	hostlistPath,
-	dictPath,
-	port,
-	outputPath *string
-	usrIsHost *bool
-	numGoroutines,
-	timeoutResolve,
-	timeoutDial *int
-	version *bool
+	host           *string
+	hostlistPath   *string
+	dictPath       *string
+	port           *string
+	outputPath     *string
+	usrIsHost      *bool
+	numGoroutines  *int
+	timeoutResolve *time.Duration
+	timeoutConnect *time.Duration
+	version        *bool
 }{
-	host:           flag.String("h", "", ""),
-	hostlistPath:   flag.String("H", "", ""),
-	dictPath:       flag.String("d", "", ""),
-	port:           flag.String("p", "22", ""),
-	outputPath:     flag.String("o", "", ""),
-	usrIsHost:      flag.Bool("u", false, ""),
-	numGoroutines:  flag.Int("t", 1, ""),
-	timeoutResolve: flag.Int("tr", 5, ""),
-	timeoutDial:    flag.Int("td", 10, ""),
-	version:        flag.Bool("v", false, ""),
+	host:           flag.StringP("host", "h", "", ""),
+	hostlistPath:   flag.StringP("hostlist-file", "H", "", ""),
+	dictPath:       flag.StringP("dictionary-file", "d", "", ""),
+	port:           flag.StringP("port", "p", "22", ""),
+	outputPath:     flag.StringP("output-file", "o", "", ""),
+	usrIsHost:      flag.BoolP("user-is-host", "u", false, ""),
+	numGoroutines:  flag.IntP("threads", "t", 1, ""),
+	timeoutResolve: flag.DurationP("timeout-resolve", "r", time.Second*5, ""),
+	timeoutConnect: flag.DurationP("timeout-connect", "c", time.Second*10, ""),
+	version:        flag.BoolP("version", "v", false, ""),
 }
 
-func argHelp() {
-	fmt.Printf(`
-Usage: kryer [-h or -H] [dictionary] [arguments]
+func flagUsage() {
+	fmt.Printf(`Usage: kryer [-h | -H] [-d] [options...]
 
 Parameters:
-	-h:  The host which will be targeted. Ignored if the hostlist option is set.
-	-H:  Hostlist file path. Settings this option will also enable the use of hostlist mode.
-	-d:  Dictionary file path.
-	-p:  Remote port. Defaults to 22 if unset.
-	-o:  Output file path. If set, will output all found credentials to the specified file.
-	-u:  Username is host. When enabled, the address will be derived from the username + .local.
-	-t:  Maximum amount of concurrent outgoing connection attempts. Defaults to 1 if unset.
-	-tr: Resolution timeout. Timeout in seconds for resolving a host address. Defaults to 5 if unset.
-	-td: Dialling timeout. Timeout in seconds for attempting to establish a connection with a host. Default to 10 if unset.
-	-v:  Prints the installed version of Kryer.
+	-h, --host:             The host which will be targeted. Format is "username@host" without -u. Ignored if the hostlist option is set.
+	-H, --hostlist-path:    Hostlist file path. Settings this option will also enable the use of hostlist mode.
+	-d, --dictionary-file:  Dictionary file path.
+	-p, --port:             Remote port. (default 22)
+	-o, --output-file:      Output file path. Will output all found credentials to the specified file. Will be created if non-existent.
+	-u, --user-is-host:     Username is host. When enabled, the address will be derived from the username + .local. (default false)
+	-t, --threads:          Maximum amount of concurrent outgoing connection attempts. (default 1)
+	-r, --timeout-resolve:  Resolution timeout. Timeout in seconds for resolving a host address. (default 5s)
+	-d, --timeout-connect:  Dialling timeout. Timeout in seconds for attempting to establish a connection with a host. (default 10s)
+	-v, --version:          Prints the installed version of Kryer.
 
 `,
 	)
@@ -180,7 +179,9 @@ func writeToFile(str, path string) error {
 }
 
 func main() {
-	flag.Usage = argHelp
+	flag.Usage = flagUsage
+	flag.ErrHelp = nil
+
 	flag.Parse()
 	// Validate arguments.
 	if *args.version {
@@ -188,27 +189,32 @@ func main() {
 		os.Exit(0)
 	}
 	if *args.host == "" && *args.hostlistPath == "" {
-		argHelp()
-		fatalf("main: invalid argument(s): please specify a host or hostlist\n")
+		flagUsage()
+		fmt.Printf("invalid arguments: you must provide either \"-h, --host\" or \"-H, --hostlist-file\"\n")
+		os.Exit(2)
 	}
 	if *args.dictPath == "" {
-		argHelp()
-		fatalf("main: invalid argument(s): please specify a dictionary\n")
+		flagUsage()
+		fmt.Printf("invalid arguments: you must provide \"-d, --dictionary-file\"\n")
+		os.Exit(2)
 	}
 	if *args.numGoroutines < 1 {
-		argHelp()
-		fatalf("main: invalid argument(s): number of threads can't be lower than 1\n")
+		flagUsage()
+		fmt.Printf("invalid argument %d for \"-t, --threads\": number of threads must be at least 1\n", *args.numGoroutines)
+		os.Exit(2)
 	}
 	if *args.numGoroutines > 20 {
 		printfWarn("setting a high number of maximum concurrent connections might cause instability such as skipped dictionary entries\n")
 	}
 	if *args.timeoutResolve <= 0 {
-		argHelp()
-		fatalf("main: invalid argument(s): resolution timeout can't be lower than or equal to 0\n")
+		flagUsage()
+		fmt.Printf("invalid argument \"%s\" for \"-r, --timeout-resolve\": timeout must be higher than 0\n", *args.timeoutResolve)
+		os.Exit(2)
 	}
-	if *args.timeoutDial <= 0 {
-		argHelp()
-		fatalf("main: invalid argument(s): dialling timeout can't be lower than or equal to 0\n")
+	if *args.timeoutConnect <= 0 {
+		flagUsage()
+		fmt.Printf("invalid argument \"%s\" for \"-c, --timeout-connect\": timeout must be higher than 0\n", *args.timeoutConnect)
+		os.Exit(2)
 	}
 
 	// Load dictionary.
@@ -247,7 +253,7 @@ func main() {
 	for _, host := range hosts {
 		printfInfo("Attempting to connect to %s@%s\n", host.username, host.addr)
 
-		ctx, cancel := context.WithTimeout(context.Background(), time.Duration(*args.timeoutResolve)*time.Second)
+		ctx, cancel := context.WithTimeout(context.Background(), *args.timeoutResolve)
 
 		ip, err := host.resolveAddr(ctx)
 		if err != nil {
@@ -262,7 +268,7 @@ func main() {
 			Username:   host.username,
 			Pwds:       dict,
 			Goroutines: *args.numGoroutines,
-			Timeout:    time.Duration(*args.timeoutDial) * time.Second,
+			Timeout:    *args.timeoutConnect,
 		})
 		if err != nil {
 			printfError("main: %s\n", err.Error())
