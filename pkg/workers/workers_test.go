@@ -22,6 +22,10 @@ func TestPool(t *testing.T) {
 	task := workers.Task{
 		Fn: func(params []interface{}) {
 			var (
+				// The ok variable is omitted here because of 
+				// the inherent simplicity. It is a good idea
+				// to include it in any other code to prevent
+				// unhandled errors.
 				taskContent = params[0].(string)
 				c           = params[1].(chan string)
 				wg          = params[2].(*sync.WaitGroup)
@@ -79,7 +83,7 @@ func TestPoolGoroutines(t *testing.T) {
 	}
 
 }
-
+12345678901234567890123456789012345678901234567890123456789012345678901234567890
 func BenchmarkPool(b *testing.B) {
 	var (
 		poolSize = runtime.NumCPU()
