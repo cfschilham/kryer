@@ -83,7 +83,7 @@ func TestPoolGoroutines(t *testing.T) {
 	}
 
 }
-12345678901234567890123456789012345678901234567890123456789012345678901234567890
+
 func BenchmarkPool(b *testing.B) {
 	var (
 		poolSize = runtime.NumCPU()
